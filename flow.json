@@ -1,10 +1,7 @@
 {
 	"contracts": {
-		"Counter": {
-			"source": "cadence/contracts/Counter.cdc",
-			"aliases": {
-				"testing": "0000000000000007"
-			}
+		"ArtDrop": {
+			"source": "contracts/ArtDrop.cdc"
 		}
 	},
 	"dependencies": {
@@ -94,6 +91,13 @@
 				"type": "file",
 				"location": "emulator-account.pkey"
 			}
+		}
+	},
+	"deployments": {
+		"emulator": {
+			"emulator-account": [
+				"ArtDrop"
+			]
 		}
 	}
 }
