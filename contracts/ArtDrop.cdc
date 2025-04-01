@@ -14,11 +14,15 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     access(self) let collectionInfo: {String: AnyStruct}  
     // Dictionary to map artists by name to their metadata
     access(self) let artists: {String: Artist}
+    // Dictionary to map Piece by name to their metadata
+    access(self) let pieces: @{String: Piece}
 
     // Track of total supply of ArtDrop NFTs
     access(all) var totalSupply: UInt64
     // Track of total amount of Artists on ArtDrop
     access(all) var totalArtist: UInt64
+    // Track of total amount of Pieces on ArtDrop
+    access(all) var totalPieces: UInt64
 
     // -----------------------------------------------------------------------
     // ArtDrop contract Events
@@ -27,6 +31,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     access(all) event Withdraw(id: UInt64, from: Address?)
 	access(all) event Deposit(id: UInt64, to: Address?)
     access(all) event ArtistCreated(id: UInt64, name: String, accountAddress: Address)
+    access(all) event PieceCreated(id: UInt64, name: String, artist: String)
 
     // -----------------------------------------------------------------------
     // ArtDrop account paths
@@ -85,6 +90,8 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     }
 
     access(all) resource Piece {
+        // Piece's unique id
+        access(all) let id: UInt64
         // Piece's name
         access(all) let name: String
         // Art's artist's name
@@ -109,23 +116,30 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
         // access(all) let currentOwners: String
         access(all) var collections: [String]
         // Piece's acquisition details
-        access(all) let acquisitionDetails: String
+        access(all) let acquisitionDetails: String?
+        // Piece's production details
+        access(all) let productionDetails: ProductionDetails
+
 
 
         init(
-            name: String,
-            description: String,
-            artistName: String,
-            artistAccount: Address,
-            creationDate: String,
-            creationLocation: String,
-            artType: String,
-            medium: String,
-            subjectMatter: String,
-            provenanceNotes: String,
-            acquisitionDetails: String
+            _ name: String,
+            _ description: String,
+            _ artistName: String,
+            _ artistAccount: Address,
+            _ creationDate: String,
+            _ creationLocation: String,
+            _ artType: String,
+            _ medium: String,
+            _ subjectMatter: String,
+            _ provenanceNotes: String,
+            _ acquisitionDetails: String?,
+            _ productionDetails: ProductionDetails
         ) {
+            // Increase the total of Pieces supply
+            ArtDrop.totalPieces = ArtDrop.totalPieces + 1
 
+            self.id = ArtDrop.totalPieces  
             self.name = name
             self.description = description
             self.artistName = artistName
@@ -137,6 +151,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             self.subjectMatter = subjectMatter
             self.provenanceNotes = provenanceNotes
             self.acquisitionDetails = acquisitionDetails
+            self.productionDetails = productionDetails
             self.collections = []
         }
     }
@@ -168,26 +183,26 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
 
 
         init(
-            pieceCondition: String,
-            substrate: String,
-            originalHeight: UFix64,
-            originalWidth: UFix64,
-            texture: String,
-            gloss: String,
-            metalness: String, 
-            totalSalePrice: UFix64,
-            totalEditions: String,
-            sizes: String,
-            printingTypes: String,
-            substrateTypes: String,
-            frame: String,
-            mounting: String,
-            packing: String,
-            artistSignature: String,
-            certificateOfAuth: String,
-            numbering: String,
-            status: String,
-            otherFinishings: String
+            _ pieceCondition: String,
+            _ substrate: String,
+            _ originalHeight: UFix64,
+            _ originalWidth: UFix64,
+            _ texture: String,
+            _ gloss: String,
+            _ metalness: String, 
+            _ totalSalePrice: UFix64,
+            _ totalEditions: String,
+            _ sizes: String,
+            _ printingTypes: String,
+            _ substrateTypes: String,
+            _ frame: String,
+            _ mounting: String,
+            _ packing: String,
+            _ artistSignature: String,
+            _ certificateOfAuth: String,
+            _ numbering: String,
+            _ status: String,
+            _ otherFinishings: String
         ) {
 
             self.pieceCondition = pieceCondition
@@ -401,12 +416,43 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             socials: {String: String},
             representation: String?,
             accountAddress: Address
-        ) {
+        ): UInt64 {
             // Create new Artist struct
             let newArtist = Artist(name, biography, nationality, preferredMedium, socials, representation, accountAddress)
             // Save artist to the dictionary stored inside the smart contract
             ArtDrop.artists[name] = newArtist
 
+            return newArtist.id
+        }
+        // createPiece creates a new Piece resource 
+        // and stores it in the Piece dictionary in the ArtDrop smart contract
+        //
+        // Returns: the ID of the new Piece object
+        //
+        access(all) fun createPiece(
+            name: String,
+            description: String,
+            artistName: String,
+            artistAccount: Address,
+            creationDate: String,
+            creationLocation: String,
+            artType: String,
+            medium: String,
+            subjectMatter: String,
+            provenanceNotes: String,
+            acquisitionDetails: String?,
+            productionDetails: ProductionDetails
+        ): UInt64 {
+            // Create new Piece resource
+            let newPiece <- create Piece(name, description, artistName, artistAccount, creationDate, creationLocation, artType, medium, subjectMatter, provenanceNotes, acquisitionDetails, productionDetails)
+            // store the new id 
+            let newID = newPiece.id
+            // emit event
+            emit PieceCreated(id: newPiece.id, name: newPiece.name, artist: newPiece.artistName)
+            // Store the new resource inside the smart contract
+            ArtDrop.pieces[newPiece.name] <-! newPiece
+
+            return newID
         }
     }
     //
@@ -417,10 +463,20 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     // ArtDrop public functions
     // -----------------------------------------------------------------------
-    access(all) fun getArtists(): {String: ArtDrop.Artist} {
+    // public function to get a dictionary of all artists
+    access(all) fun getArtists(): {String: Artist} {
         return self.artists
     }
-
+    // public function to get an Artist's metadata by name
+    access(all) fun getArtist(name: String): Artist? {
+        return self.artists[name]
+        ?? panic("No artist by name: ".concat(name))
+    }
+    // public function to get a dictionary of all artists
+    access(all) fun getAllPieces(): &{String: ArtDrop.Piece} {
+        let pieces = &self.pieces as &{String: Piece}
+        return pieces
+    }
 
     // -----------------------------------------------------------------------
     // ArtDrop Generic or Standard public functions
@@ -479,8 +535,10 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     init() {
         self.collectionInfo = {}
         self.artists = {}
+        self.pieces <- {}
         self.totalSupply = 0
         self.totalArtist = 0
+        self.totalPieces = 0
 
         let identifier = "ArtDrop_".concat(self.account.address.toString())
         // Set the named paths
