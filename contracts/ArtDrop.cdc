@@ -12,8 +12,13 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     // Dictionary to hold general collection information
     access(self) let collectionInfo: {String: AnyStruct}  
+    // Dictionary to map artists by name to their metadata
+    access(self) let artists: {String: Artist}
+
     // Track of total supply of ArtDrop NFTs
     access(all) var totalSupply: UInt64
+    // Track of total amount of Artists on ArtDrop
+    access(all) var totalArtist: UInt64
 
     // -----------------------------------------------------------------------
     // ArtDrop contract Events
@@ -21,6 +26,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     access(all) event ContractInitialized()
     access(all) event Withdraw(id: UInt64, from: Address?)
 	access(all) event Deposit(id: UInt64, to: Address?)
+    access(all) event ArtistCreated(id: UInt64, name: String, accountAddress: Address)
 
     // -----------------------------------------------------------------------
     // ArtDrop account paths
@@ -38,6 +44,176 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     // actual stored values, but an instance (or object) of one of these Types
     // can be created by this contract that contains stored values.
     // -----------------------------------------------------------------------
+    access(all) struct Artist {
+        // Unique ID for artist
+        access(all) var id: UInt64
+        access(all) var name: String
+        access(all) var biography: String
+        access(all) var nationality: String
+        access(all) var preferredMedium: String
+        access(all) var socials: {String: String}
+        access(all) var representation: String?
+        access(all) let accountAddress: Address
+
+        init(
+            _ name: String,
+            _ biography: String,
+            _ nationality: String, 
+            _ preferredMedium: String,
+            _ socials: {String: String},
+            _ representation: String?,
+            _ accountAddress: Address) {
+            // Increase total supply of Artists
+            ArtDrop.totalArtist = ArtDrop.totalArtist + 1
+
+            self.id = ArtDrop.totalArtist
+            self.name = name
+            self.biography = biography
+            self.nationality = nationality
+            self.preferredMedium = preferredMedium
+            self.socials = socials
+            self.representation = representation
+            self.accountAddress = accountAddress
+
+            // Emit event
+            emit ArtistCreated(id: self.id, name: self.name, accountAddress: self.accountAddress)
+        }
+
+        // Artist struct functionality
+
+        // Update attribute variable
+    }
+
+    access(all) resource Piece {
+        // Piece's name
+        access(all) let name: String
+        // Art's artist's name
+        access(all) let artistName: String
+        // Art's description
+        access(all) let description: String
+        // Art's artist's account address
+        access(all) let artistAccount: Address
+        // Art's creation date
+        access(all) let creationDate: String
+        // Art's creation location
+        access(all) let creationLocation: String
+        // Art's type
+        access(all) let artType: String
+        // Piece's medium
+        access(all) let medium: String
+        // Piece's subject matter
+        access(all) let subjectMatter: String
+        // Art's provenance notes
+        access(all) let provenanceNotes: String
+        // Piece's current owners
+        // access(all) let currentOwners: String
+        access(all) var collections: [String]
+        // Piece's acquisition details
+        access(all) let acquisitionDetails: String
+
+
+        init(
+            name: String,
+            description: String,
+            artistName: String,
+            artistAccount: Address,
+            creationDate: String,
+            creationLocation: String,
+            artType: String,
+            medium: String,
+            subjectMatter: String,
+            provenanceNotes: String,
+            acquisitionDetails: String
+        ) {
+
+            self.name = name
+            self.description = description
+            self.artistName = artistName
+            self.artistAccount = artistAccount
+            self.creationDate = creationDate
+            self.creationLocation = creationLocation
+            self.artType = artType
+            self.medium = medium
+            self.subjectMatter = subjectMatter
+            self.provenanceNotes = provenanceNotes
+            self.acquisitionDetails = acquisitionDetails
+            self.collections = []
+        }
+    }
+
+    // Struct to store the production details of a Piece
+    // like frame's material, packing, or whether it's elevated or not
+    access(all) struct ProductionDetails {
+        
+        access(all) let pieceCondition: String
+        access(all) let substrate: String
+        access(all) let originalHeight: UFix64
+        access(all) let originalWidth: UFix64
+        access(all) let texture: String
+        access(all) let gloss: String
+        access(all) let metalness: String
+        access(all) let totalSalePrice: UFix64
+        access(all) let totalEditions: String
+        access(all) let sizes: String
+        access(all) let printingTypes: String
+        access(all) let substrateTypes: String
+        access(all) let frame: String
+        access(all) let mounting: String
+        access(all) let packing: String
+        access(all) let artistSignature: String
+        access(all) let certificateOfAuth: String
+        access(all) let numbering: String
+        access(all) let status: String
+        access(all) let otherFinishings: String
+
+
+        init(
+            pieceCondition: String,
+            substrate: String,
+            originalHeight: UFix64,
+            originalWidth: UFix64,
+            texture: String,
+            gloss: String,
+            metalness: String, 
+            totalSalePrice: UFix64,
+            totalEditions: String,
+            sizes: String,
+            printingTypes: String,
+            substrateTypes: String,
+            frame: String,
+            mounting: String,
+            packing: String,
+            artistSignature: String,
+            certificateOfAuth: String,
+            numbering: String,
+            status: String,
+            otherFinishings: String
+        ) {
+
+            self.pieceCondition = pieceCondition
+            self.substrate = substrate
+            self.originalHeight = originalHeight
+            self.originalWidth = originalWidth
+            self.texture = texture
+            self.gloss = gloss
+            self.metalness = metalness
+            self.totalSalePrice = totalSalePrice
+            self.totalEditions = totalEditions
+            self.sizes = sizes
+            self.printingTypes = printingTypes
+            self.substrateTypes = substrateTypes
+            self.frame = frame
+            self.mounting = mounting
+            self.packing = packing
+            self.artistSignature = artistSignature
+            self.certificateOfAuth = certificateOfAuth
+            self.numbering = numbering
+            self.status = status
+            self.otherFinishings = otherFinishings
+        }
+    }
+
+
     /// The resource that represents a VenezulaNFT
 	access(all) resource NFT: NonFungibleToken.NFT {
         access(all) let id: UInt64
@@ -208,7 +384,32 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     // ArtDrop Administrator Resource
     // -----------------------------------------------------------------------
+    // Admin is a special authorization resource that 
+    // allows the owner to perform important functions to modify the 
+    // various aspects of the Artists, Pieces, and Collections
+    access(all) resource Administrator {
+        // createArtist creates a new Artist struct 
+        // and stores it in the Artist dictionary in the ArtDrop smart contract
+        //
+        // Returns: the ID of the new Artist object
+        //
+        access(all) fun createArtist(
+            name: String,
+            biography: String,
+            nationality: String,
+            preferredMedium: String,
+            socials: {String: String},
+            representation: String?,
+            accountAddress: Address
+        ) {
+            // Create new Artist struct
+            let newArtist = Artist(name, biography, nationality, preferredMedium, socials, representation, accountAddress)
+            // Save artist to the dictionary stored inside the smart contract
+            ArtDrop.artists[name] = newArtist
 
+        }
+    }
+    //
     // -----------------------------------------------------------------------
     // ArtDrop private functions
     // -----------------------------------------------------------------------
@@ -216,6 +417,15 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     // ArtDrop public functions
     // -----------------------------------------------------------------------
+    access(all) fun getArtists(): {String: ArtDrop.Artist} {
+        return self.artists
+    }
+
+
+    // -----------------------------------------------------------------------
+    // ArtDrop Generic or Standard public functions
+    // -----------------------------------------------------------------------
+    //
     /// createEmptyCollection creates an empty Collection for the specified NFT type
     /// and returns it to the caller so that they can own NFTs
     access(all) fun createEmptyCollection(nftType: Type): @{NonFungibleToken.Collection} {
@@ -268,7 +478,9 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
 	}
     init() {
         self.collectionInfo = {}
+        self.artists = {}
         self.totalSupply = 0
+        self.totalArtist = 0
 
         let identifier = "ArtDrop_".concat(self.account.address.toString())
         // Set the named paths
@@ -276,6 +488,10 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
 		self.CollectionPublicPath = PublicPath(identifier: identifier)!
 		self.CollectionPrivatePath = PrivatePath(identifier: identifier)!
 		self.AdministratorStoragePath = StoragePath(identifier: identifier.concat("Administrator"))!
+
+		// Create a Administrator resource and save it to VenezuelaNFT_20 account storage
+		let administrator <- create Administrator()
+		self.account.storage.save(<- administrator, to: self.AdministratorStoragePath)
     }
 
 }
