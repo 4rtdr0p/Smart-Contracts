@@ -41,7 +41,6 @@ func main() {
 		WithArg("name", "Bull Run"),
 		WithArg("description", "A bull with a BitCoin on its back"),
 		WithArg("artistName", "Beeple"),
-		WithArg("description", "Beeple's artwork was featured on Louis Vuitton’s Women's Spring 2019 ready to wear collection as well as window displays at their flagship stores all over the world. They also worked together to build a bespoke custom handbag featuring bendable LED screens that featured his videos."),
 		WithArg("creationDate", "Spring 2019"),
 		WithArg("creationLocation", "Charleston, SC, USA"),
 		WithArg("artType", "Digital"),
@@ -52,4 +51,17 @@ func main() {
 		WithArg("acquisitionDetails", "N/A"),
 	)
 	o.Script("get_all_pieces")
+	// Update a Piece's blueprint with sentiment feedback
+	o.Tx("admin/update_piece_sentiments",
+		WithSigner("account"),
+		WithArg("pieceName", "Bull Run"),
+		WithArg("newViewsCount", 100),
+	)
+	// Get a Piece's views
+	o.Script("get_all_pieces")
+
+	/* 	o.Script("get_piece_sentiment",
+		WithArg("pieceName", "Bull Run"),
+	) */
+
 }

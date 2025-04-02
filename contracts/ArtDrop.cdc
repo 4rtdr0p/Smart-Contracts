@@ -15,7 +15,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     // Dictionary to map artists by name to their metadata
     access(self) let artists: {String: Artist}
     // Dictionary to map Piece by name to their metadata
-    access(self) let pieces: @{String: Piece}
+    // access(self) let pieces: @{String: Piece}
 
     // Track of total supply of ArtDrop NFTs
     access(all) var totalSupply: UInt64
@@ -32,6 +32,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
 	access(all) event Deposit(id: UInt64, to: Address?)
     access(all) event ArtistCreated(id: UInt64, name: String, accountAddress: Address)
     access(all) event PieceCreated(id: UInt64, name: String, artist: String)
+    access(all) event ViewsUpdated(pieceName: String, oldViewsCount: Int64, newViewsCount: Int64)
 
     // -----------------------------------------------------------------------
     // ArtDrop account paths
@@ -40,6 +41,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
 	access(all) let CollectionPublicPath: PublicPath
 	access(all) let CollectionPrivatePath: PrivatePath
 	access(all) let AdministratorStoragePath: StoragePath
+	access(all) let ArtStoragePath: StoragePath
 
     // -----------------------------------------------------------------------
     // ArtDrop contract-level Composite Type definitions
@@ -49,6 +51,39 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     // actual stored values, but an instance (or object) of one of these Types
     // can be created by this contract that contains stored values.
     // -----------------------------------------------------------------------
+    // Storage resource for all of the Pieces' metadata
+    // this is stored inside the smart contract's account
+    access(all) resource ArtStorage {
+
+        access(all) let pieces: {String: Piece}
+
+        init() {
+            self.pieces = {}
+        }
+
+        // Function to get all stored Pieces
+        access(all) fun getAllPieces(): &{String: Piece} {
+            let pieces = &self.pieces as &{String: Piece}
+            return pieces
+        }
+        // Function to get a Piece's metadata
+        access(all) fun getPiece(_ pieceName: String): ArtDrop.Piece {
+            pre {
+                self.pieces[pieceName] != nil: "There's no Piece by the name: ".concat(pieceName)
+            }
+            let metadata = self.pieces[pieceName]!
+            return metadata
+        }
+        // Function to add a Piece to the storage
+        access(all) fun addPiece(newPiece: Piece) {
+            self.pieces[newPiece.name] = newPiece
+        }
+        // Function to update a Piece's sentiment
+        access(all) fun updateViews(pieceName: String, newCount: Int64) {
+            self.pieces[pieceName]!.updateViews(newCount: newCount)
+        }
+    }
+    // Struct for Artist's metadata
     access(all) struct Artist {
         // Unique ID for artist
         access(all) var id: UInt64
@@ -89,7 +124,9 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
         // Update attribute variable
     }
 
-    access(all) resource Piece {
+    // The Piece struct represents the Art's metadata
+    // it serves as a blueprint from which NFTs can be minted
+    access(all) struct Piece {
         // Piece's unique id
         access(all) let id: UInt64
         // Piece's name
@@ -119,8 +156,8 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
         access(all) let acquisitionDetails: String?
         // Piece's production details
         access(all) let productionDetails: ProductionDetails
-
-
+        // A track of this Piece sentiment
+        access(all) let sentimentTrack: Sentiment
 
         init(
             _ name: String,
@@ -153,6 +190,15 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             self.acquisitionDetails = acquisitionDetails
             self.productionDetails = productionDetails
             self.collections = []
+            self.sentimentTrack = Sentiment()
+        }
+        // Functionality around a Piece's blueprint
+        access(all) fun updateViews(newCount: Int64) {
+            let sentiment = &self.sentimentTrack as &ArtDrop.Sentiment
+            let oldCount = sentiment.views
+            sentiment.updateViews(newCount: newCount)
+
+            emit ViewsUpdated(pieceName: self.name, oldViewsCount: oldCount, newViewsCount: sentiment.views)
         }
     }
 
@@ -225,6 +271,46 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             self.numbering = numbering
             self.status = status
             self.otherFinishings = otherFinishings
+        }
+    }
+
+    // Sentiment struct serves to track feedback on a Piece
+    access(all) struct Sentiment {
+        access(all) var views: Int64
+        access(all) var likes: Int64
+        access(all) var shares: Int64
+        access(all) var purchases: Int64
+
+        init() {
+            self.views = 0
+            self.likes = 0
+            self.shares = 0
+            self.purchases = 0
+        }
+        // Functionality around updating a Piece's sentiment
+        access(all) fun updateViews(newCount:  Int64) {
+            pre {
+                self.views < newCount: "New count cannot be lower that current count"
+            }
+            self.views = newCount
+        }
+        access(all) fun updateLikes(newCount:  Int64) {
+            pre {
+                self.likes < newCount: "New count cannot be lower that current count"
+            }
+            self.likes = newCount
+        }
+        access(all) fun updateShares(newCount:  Int64) {
+            pre {
+                self.shares < newCount: "New count cannot be lower that current count"
+            }
+            self.shares = newCount
+        }
+        access(all) fun updatePurchases(newCount:  Int64) {
+            pre {
+                self.purchases < newCount: "New count cannot be lower that current count"
+            }
+            self.purchases = newCount
         }
     }
 
@@ -444,15 +530,24 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             productionDetails: ProductionDetails
         ): UInt64 {
             // Create new Piece resource
-            let newPiece <- create Piece(name, description, artistName, artistAccount, creationDate, creationLocation, artType, medium, subjectMatter, provenanceNotes, acquisitionDetails, productionDetails)
+            let newPiece = Piece(name, description, artistName, artistAccount, creationDate, creationLocation, artType, medium, subjectMatter, provenanceNotes, acquisitionDetails, productionDetails)
             // store the new id 
             let newID = newPiece.id
             // emit event
             emit PieceCreated(id: newPiece.id, name: newPiece.name, artist: newPiece.artistName)
+            // borrow ArtStorage from Account
+            let storage = ArtDrop.account.storage.borrow<&ArtDrop.ArtStorage>(from: ArtDrop.ArtStoragePath)!
             // Store the new resource inside the smart contract
-            ArtDrop.pieces[newPiece.name] <-! newPiece
+            storage.addPiece(newPiece: newPiece)
 
             return newID
+        }
+        // updateViews and other functions update the
+        // sentiment track for a particular piece
+        access(all) fun updateViews(pieceName: String, newCount: Int64) {
+            // borrow ArtStorage from Account
+            let storage = ArtDrop.account.storage.borrow<&ArtDrop.ArtStorage>(from: ArtDrop.ArtStoragePath)!
+            storage.updateViews(pieceName: pieceName, newCount: newCount)
         }
     }
     //
@@ -474,10 +569,18 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     }
     // public function to get a dictionary of all artists
     access(all) fun getAllPieces(): &{String: ArtDrop.Piece} {
-        let pieces = &self.pieces as &{String: Piece}
+        let storage = ArtDrop.account.storage.borrow<&ArtDrop.ArtStorage>(from: ArtDrop.ArtStoragePath)!
+        let pieces = storage.getAllPieces()
+
         return pieces
     }
-
+    // public function to get the sentiment on a Piece
+    access(all) fun getPieceSentiment(pieceName: String): Sentiment {
+        // borrow ArtStorage from Account
+        let storage = ArtDrop.account.storage.borrow<&ArtDrop.ArtStorage>(from: ArtDrop.ArtStoragePath)!
+        let piece = storage.getPiece(pieceName)
+        return piece.sentimentTrack
+    }
     // -----------------------------------------------------------------------
     // ArtDrop Generic or Standard public functions
     // -----------------------------------------------------------------------
@@ -535,7 +638,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     init() {
         self.collectionInfo = {}
         self.artists = {}
-        self.pieces <- {}
+        // self.pieces <- {}
         self.totalSupply = 0
         self.totalArtist = 0
         self.totalPieces = 0
@@ -546,10 +649,14 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
 		self.CollectionPublicPath = PublicPath(identifier: identifier)!
 		self.CollectionPrivatePath = PrivatePath(identifier: identifier)!
 		self.AdministratorStoragePath = StoragePath(identifier: identifier.concat("Administrator"))!
+		self.ArtStoragePath = StoragePath(identifier: identifier.concat("ArtStorage"))!
 
-		// Create a Administrator resource and save it to VenezuelaNFT_20 account storage
+		// Create a Administrator resource and save it to ArtDrop account storage
 		let administrator <- create Administrator()
 		self.account.storage.save(<- administrator, to: self.AdministratorStoragePath)
+		// Create a ArtStorage resource and save it to ArtDrop account storage
+		let artStorage <- create ArtStorage()
+		self.account.storage.save(<- artStorage, to: self.ArtStoragePath)
     }
 
 }
