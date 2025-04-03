@@ -1,7 +1,7 @@
-import "ArtDrop"
+import "ArtStudio"
 
 // This transaction is for the admin to create a new artist struct
-// and store it in the ArtDrop smart contract
+// and store it in the ArtStudio smart contract
 
 transaction(
     name: String,
@@ -12,10 +12,10 @@ transaction(
     representation: String?,
     accountAddress: Address) {
 
-    let Administrator: &ArtDrop.Administrator
+    let Administrator: &ArtStudio.Administrator
 
     prepare(admin: auth(BorrowValue) &Account) {
-        self.Administrator = admin.storage.borrow<&ArtDrop.Administrator>(from: ArtDrop.AdministratorStoragePath)!
+        self.Administrator = admin.storage.borrow<&ArtStudio.Administrator>(from: ArtStudio.AdministratorStoragePath)!
     }
     execute {
         let newCardID = self.Administrator.createArtist(

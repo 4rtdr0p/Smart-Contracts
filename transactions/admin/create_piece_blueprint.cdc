@@ -1,7 +1,7 @@
-import "ArtDrop"
+import "ArtStudio"
 
 // This transaction is for the admin to create a new artist struct
-// and store it in the ArtDrop smart contract
+// and store it in the ArtStudio smart contract
 
 transaction(
     name: String,
@@ -17,15 +17,15 @@ transaction(
     acquisitionDetails: String?
     ) {
 
-    let Administrator: &ArtDrop.Administrator
+    let Administrator: &ArtStudio.Administrator
     let artistAccount: Address?
-    let productionDetails: ArtDrop.ProductionDetails
+    let productionDetails: ArtStudio.ProductionDetails
 
     prepare(admin: auth(BorrowValue) &Account) {
-        self.Administrator = admin.storage.borrow<&ArtDrop.Administrator>(from: ArtDrop.AdministratorStoragePath)!
-        self.artistAccount = ArtDrop.getArtist(name: artistName)?.accountAddress ?? panic("No artist found by this name: ".concat(artistName))
+        self.Administrator = admin.storage.borrow<&ArtStudio.Administrator>(from: ArtStudio.AdministratorStoragePath)!
+        self.artistAccount = ArtStudio.getArtist(name: artistName)?.accountAddress ?? panic("No artist found by this name: ".concat(artistName))
 
-        self.productionDetails = ArtDrop.ProductionDetails(
+        self.productionDetails = ArtStudio.ProductionDetails(
             "Near Mint",
             "Bamboo",
             10.0,
@@ -45,7 +45,7 @@ transaction(
             "No Certification",
             "No numbering",
             "Almost completed",
-            "Elevated by ArtDrop",
+            "Elevated by ArtStudio",
             )
     }
     execute {

@@ -1,4 +1,4 @@
-module artdrop/overflow
+module ArtStudio/overflow
 
 go 1.23
 

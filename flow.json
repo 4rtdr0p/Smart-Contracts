@@ -1,8 +1,6 @@
 {
 	"contracts": {
-		"ArtDrop": {
-			"source": "contracts/ArtDrop.cdc"
-		}
+		"ArtStudio": "contracts/ArtStudio.cdc"
 	},
 	"dependencies": {
 		"Burner": {
@@ -85,6 +83,10 @@
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
 	"accounts": {
+		"testnet-ArtStudio": {
+			"address": "c9bebc18db58bae2",
+			"key": "21f33a43c2a2bcdd7ca20a32ba46a1dafd5ad5091ec344b836e6ac65658bf330"
+		},
 		"emulator-account": {
 			"address": "f8d6e0586b0a20c7",
 			"key": {
@@ -100,7 +102,12 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
-				"ArtDrop"
+				"ArtStudio"
+			]
+		},
+		"testnet": {
+			"testnet-ArtStudio": [
+				"ArtStudio"
 			]
 		}
 	}

@@ -5,9 +5,9 @@ import "ViewResolver"
 import "MetadataViews"
 
 access(all)
-contract ArtDrop: NonFungibleToken, ViewResolver {
+contract ArtStudio: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
-    // ArtDrop contract-level fields.
+    // ArtStudio contract-level fields.
     // These contain actual values that are stored in the smart contract.
     // -----------------------------------------------------------------------
     // Dictionary to hold general collection information
@@ -17,15 +17,15 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     // Dictionary to map Piece by name to their metadata
     // access(self) let pieces: @{String: Piece}
 
-    // Track of total supply of ArtDrop NFTs
+    // Track of total supply of ArtStudio NFTs
     access(all) var totalSupply: UInt64
-    // Track of total amount of Artists on ArtDrop
+    // Track of total amount of Artists on ArtStudio
     access(all) var totalArtist: UInt64
-    // Track of total amount of Pieces on ArtDrop
+    // Track of total amount of Pieces on ArtStudio
     access(all) var totalPieces: UInt64
 
     // -----------------------------------------------------------------------
-    // ArtDrop contract Events
+    // ArtStudio contract Events
     // ----------------------------------------------------------------------- 
     access(all) event ContractInitialized()
     access(all) event Withdraw(id: UInt64, from: Address?)
@@ -35,7 +35,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     access(all) event ViewsUpdated(pieceName: String, oldViewsCount: Int64, newViewsCount: Int64)
 
     // -----------------------------------------------------------------------
-    // ArtDrop account paths
+    // ArtStudio account paths
     // -----------------------------------------------------------------------
 	access(all) let CollectionStoragePath: StoragePath
 	access(all) let CollectionPublicPath: PublicPath
@@ -44,7 +44,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
 	access(all) let ArtStoragePath: StoragePath
 
     // -----------------------------------------------------------------------
-    // ArtDrop contract-level Composite Type definitions
+    // ArtStudio contract-level Composite Type definitions
     // -----------------------------------------------------------------------
     // These are just *definitions* for Types that this contract
     // and other accounts can use. These definitions do not contain
@@ -67,7 +67,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             return pieces
         }
         // Function to get a Piece's metadata
-        access(all) fun getPiece(_ pieceName: String): ArtDrop.Piece {
+        access(all) fun getPiece(_ pieceName: String): ArtStudio.Piece {
             pre {
                 self.pieces[pieceName] != nil: "There's no Piece by the name: ".concat(pieceName)
             }
@@ -79,8 +79,15 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             self.pieces[newPiece.name] = newPiece
         }
         // Function to update a Piece's sentiment
-        access(all) fun updateViews(pieceName: String, newCount: Int64) {
-            self.pieces[pieceName]!.updateViews(newCount: newCount)
+        access(all)
+        fun updateSentiment(
+            _ pieceName: String,
+            _ newViewsCount: Int64,
+            _ newLikesCount: Int64,
+            _ newSharesCount: Int64,
+            _ newPurchasesCount: Int64
+        ) {
+            self.pieces[pieceName]!.updateSentiment(newViewsCount: newViewsCount, newLikesCount: newLikesCount, newSharesCount: newSharesCount, newPurchasesCount: newPurchasesCount)
         }
     }
     // Struct for Artist's metadata
@@ -104,9 +111,9 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             _ representation: String?,
             _ accountAddress: Address) {
             // Increase total supply of Artists
-            ArtDrop.totalArtist = ArtDrop.totalArtist + 1
+            ArtStudio.totalArtist = ArtStudio.totalArtist + 1
 
-            self.id = ArtDrop.totalArtist
+            self.id = ArtStudio.totalArtist
             self.name = name
             self.biography = biography
             self.nationality = nationality
@@ -174,9 +181,9 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             _ productionDetails: ProductionDetails
         ) {
             // Increase the total of Pieces supply
-            ArtDrop.totalPieces = ArtDrop.totalPieces + 1
+            ArtStudio.totalPieces = ArtStudio.totalPieces + 1
 
-            self.id = ArtDrop.totalPieces  
+            self.id = ArtStudio.totalPieces  
             self.name = name
             self.description = description
             self.artistName = artistName
@@ -193,10 +200,22 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             self.sentimentTrack = Sentiment()
         }
         // Functionality around a Piece's blueprint
-        access(all) fun updateViews(newCount: Int64) {
-            let sentiment = &self.sentimentTrack as &ArtDrop.Sentiment
+        access(all)
+        fun updateSentiment(
+            newViewsCount: Int64,
+            newLikesCount: Int64,
+            newSharesCount: Int64,
+            newPurchasesCount: Int64
+            ) {
+            pre {
+                self.sentimentTrack.views <= newViewsCount: "The new Views count has to be equal or higher than the current count"
+                self.sentimentTrack.likes <= newLikesCount: "The new Likes count has to be equal or higher than the current count"
+                self.sentimentTrack.shares <= newSharesCount: "The new Shares count has to be equal or higher than the current count"
+                self.sentimentTrack.purchases <= newPurchasesCount: "The new Purchases count has to be equal or higher than the current count"
+            }
+            let sentiment = &self.sentimentTrack as &ArtStudio.Sentiment
             let oldCount = sentiment.views
-            sentiment.updateViews(newCount: newCount)
+            sentiment.updateSentiment(newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
 
             emit ViewsUpdated(pieceName: self.name, oldViewsCount: oldCount, newViewsCount: sentiment.views)
         }
@@ -288,6 +307,25 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             self.purchases = 0
         }
         // Functionality around updating a Piece's sentiment
+        access(all)
+        fun updateSentiment(
+            _ newViewsCount: Int64,
+            _ newLikesCount: Int64,
+            _ newSharesCount: Int64,
+            _ newPurchasesCount: Int64
+        ) {
+            pre {
+                self.views <= newViewsCount: "The new Views count has to be equal or higher than the current count"
+                self.likes <= newLikesCount: "The new Likes count has to be equal or higher than the current count"
+                self.shares <= newSharesCount: "The new Shares count has to be equal or higher than the current count"
+                self.purchases <= newPurchasesCount: "The new Purchases count has to be equal or higher than the current count"
+            }
+
+            self.views = newViewsCount
+            self.likes = newLikesCount
+            self.shares = newSharesCount
+            self.purchases = newPurchasesCount
+        }
         access(all) fun updateViews(newCount:  Int64) {
             pre {
                 self.views < newCount: "New count cannot be lower that current count"
@@ -321,18 +359,18 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
         access(all) let metadata: AnyStruct
 
         init() {
-            self.id = ArtDrop.totalSupply
+            self.id = ArtStudio.totalSupply
             self.metadata = {"AnyStruct": 2}
 
                         // Increment the global Cards IDs
-            ArtDrop.totalSupply = ArtDrop.totalSupply + 1
+            ArtStudio.totalSupply = ArtStudio.totalSupply + 1
         }
 
         /// createEmptyCollection creates an empty Collection
         /// and returns it to the caller so that they can own NFTs
         /// @{NonFungibleToken.Collection}
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <- ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.NFT>())
+            return <- ArtStudio.createEmptyCollection(nftType: Type<@ArtStudio.NFT>())
         }
         // Standard to return NFT's metadata
 		access(all) view fun getViews(): [Type] {
@@ -374,11 +412,11 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
 						traits: self.resolveView(Type<MetadataViews.Traits>()) as! MetadataViews.Traits?
 					)
 				case Type<MetadataViews.NFTCollectionData>():
-					return ArtDrop.resolveContractView(resourceType: Type<@ArtDrop.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
+					return ArtStudio.resolveContractView(resourceType: Type<@ArtStudio.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
         		case Type<MetadataViews.ExternalURL>():
-        			return ArtDrop.getCollectionAttribute(key: "website") as! MetadataViews.ExternalURL
+        			return ArtStudio.getCollectionAttribute(key: "website") as! MetadataViews.ExternalURL
 		        case Type<MetadataViews.NFTCollectionDisplay>():
-					return ArtDrop.resolveContractView(resourceType: Type<@ArtDrop.NFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
+					return ArtStudio.resolveContractView(resourceType: Type<@ArtStudio.NFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
 				case Type<MetadataViews.Medias>():
                     let metadata = 10
 					if metadata != nil {
@@ -396,7 +434,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
         		case Type<MetadataViews.Royalties>():
           			return MetadataViews.Royalties([
             			MetadataViews.Royalty(
-              				receiver: getAccount(ArtDrop.account.address).capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver),
+              				receiver: getAccount(ArtStudio.account.address).capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver),
               				cut: 0.5, // 5% royalty on secondary sales
               				description: "The deployer gets 5% of every secondary sale."
             			)
@@ -425,32 +463,32 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
         /// Returns a list of NFT types that this receiver accepts
         access(all) view fun getSupportedNFTTypes(): {Type: Bool} {
             let supportedTypes: {Type: Bool} = {}
-            supportedTypes[Type<@ArtDrop.NFT>()] = true
+            supportedTypes[Type<@ArtStudio.NFT>()] = true
             return supportedTypes
         }
         /// Returns whether or not the given type is accepted by the collection
         /// A collection that can accept any type should just return true by default
         access(all) view fun isSupportedNFTType(type: Type): Bool {
-            return type == Type<@ArtDrop.NFT>()
+            return type == Type<@ArtStudio.NFT>()
         }
-		// Withdraw removes a ArtDrop from the collection and moves it to the caller(for Trading)
+		// Withdraw removes a ArtStudio from the collection and moves it to the caller(for Trading)
 		access(NonFungibleToken.Withdraw) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
 			let token <- self.ownedNFTs.remove(key: withdrawID) 
-                ?? panic("This Collection doesn't own a ArtDrop by id: ".concat(withdrawID.toString()))
+                ?? panic("This Collection doesn't own a ArtStudio by id: ".concat(withdrawID.toString()))
 
 			emit Withdraw(id: token.id, from: self.owner?.address)
 
 			return <-token
 		}
-		// Deposit takes a ArtDrop and adds it to the collections dictionary
+		// Deposit takes a ArtStudio and adds it to the collections dictionary
 		// and adds the ID to the id array
 		access(all) fun deposit(token: @{NonFungibleToken.NFT}) {
-			let newArtDrop <- token as! @NFT
-			let id: UInt64 = newArtDrop.id
-			// Add the new ArtDrop to the dictionary
-            let oldArtDrop <- self.ownedNFTs[id] <- newArtDrop
-            // Destroy old ArtDrop in that slot
-            destroy oldArtDrop
+			let newArtStudio <- token as! @NFT
+			let id: UInt64 = newArtStudio.id
+			// Add the new ArtStudio to the dictionary
+            let oldArtStudio <- self.ownedNFTs[id] <- newArtStudio
+            // Destroy old ArtStudio in that slot
+            destroy oldArtStudio
 
 			emit Deposit(id: id, to: self.owner?.address)
 		}
@@ -479,18 +517,18 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
         /// and returns it to the caller
         /// @return A an empty collection of the same type
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.NFT>())
+            return <-ArtStudio.createEmptyCollection(nftType: Type<@ArtStudio.NFT>())
         }
     }
     // -----------------------------------------------------------------------
-    // ArtDrop Administrator Resource
+    // ArtStudio Administrator Resource
     // -----------------------------------------------------------------------
     // Admin is a special authorization resource that 
     // allows the owner to perform important functions to modify the 
     // various aspects of the Artists, Pieces, and Collections
     access(all) resource Administrator {
         // createArtist creates a new Artist struct 
-        // and stores it in the Artist dictionary in the ArtDrop smart contract
+        // and stores it in the Artist dictionary in the ArtStudio smart contract
         //
         // Returns: the ID of the new Artist object
         //
@@ -506,12 +544,12 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             // Create new Artist struct
             let newArtist = Artist(name, biography, nationality, preferredMedium, socials, representation, accountAddress)
             // Save artist to the dictionary stored inside the smart contract
-            ArtDrop.artists[name] = newArtist
+            ArtStudio.artists[name] = newArtist
 
             return newArtist.id
         }
         // createPiece creates a new Piece resource 
-        // and stores it in the Piece dictionary in the ArtDrop smart contract
+        // and stores it in the Piece dictionary in the ArtStudio smart contract
         //
         // Returns: the ID of the new Piece object
         //
@@ -536,7 +574,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
             // emit event
             emit PieceCreated(id: newPiece.id, name: newPiece.name, artist: newPiece.artistName)
             // borrow ArtStorage from Account
-            let storage = ArtDrop.account.storage.borrow<&ArtDrop.ArtStorage>(from: ArtDrop.ArtStoragePath)!
+            let storage = ArtStudio.account.storage.borrow<&ArtStudio.ArtStorage>(from: ArtStudio.ArtStoragePath)!
             // Store the new resource inside the smart contract
             storage.addPiece(newPiece: newPiece)
 
@@ -544,19 +582,26 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
         }
         // updateViews and other functions update the
         // sentiment track for a particular piece
-        access(all) fun updateViews(pieceName: String, newCount: Int64) {
+        access(all)
+        fun updateSentiment(
+            pieceName: String,
+            newViewsCount: Int64,
+            newLikesCount: Int64,
+            newSharesCount: Int64,
+            newPurchasesCount: Int64
+        ) {
             // borrow ArtStorage from Account
-            let storage = ArtDrop.account.storage.borrow<&ArtDrop.ArtStorage>(from: ArtDrop.ArtStoragePath)!
-            storage.updateViews(pieceName: pieceName, newCount: newCount)
+            let storage = ArtStudio.account.storage.borrow<&ArtStudio.ArtStorage>(from: ArtStudio.ArtStoragePath)!
+            storage.updateSentiment(pieceName, newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
         }
     }
     //
     // -----------------------------------------------------------------------
-    // ArtDrop private functions
+    // ArtStudio private functions
     // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
-    // ArtDrop public functions
+    // ArtStudio public functions
     // -----------------------------------------------------------------------
     // public function to get a dictionary of all artists
     access(all) fun getArtists(): {String: Artist} {
@@ -568,8 +613,8 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
         ?? panic("No artist by name: ".concat(name))
     }
     // public function to get a dictionary of all artists
-    access(all) fun getAllPieces(): &{String: ArtDrop.Piece} {
-        let storage = ArtDrop.account.storage.borrow<&ArtDrop.ArtStorage>(from: ArtDrop.ArtStoragePath)!
+    access(all) fun getAllPieces(): &{String: ArtStudio.Piece} {
+        let storage = ArtStudio.account.storage.borrow<&ArtStudio.ArtStorage>(from: ArtStudio.ArtStoragePath)!
         let pieces = storage.getAllPieces()
 
         return pieces
@@ -577,12 +622,12 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
     // public function to get the sentiment on a Piece
     access(all) fun getPieceSentiment(pieceName: String): Sentiment {
         // borrow ArtStorage from Account
-        let storage = ArtDrop.account.storage.borrow<&ArtDrop.ArtStorage>(from: ArtDrop.ArtStoragePath)!
+        let storage = ArtStudio.account.storage.borrow<&ArtStudio.ArtStorage>(from: ArtStudio.ArtStoragePath)!
         let piece = storage.getPiece(pieceName)
         return piece.sentimentTrack
     }
     // -----------------------------------------------------------------------
-    // ArtDrop Generic or Standard public functions
+    // ArtStudio Generic or Standard public functions
     // -----------------------------------------------------------------------
     //
     /// createEmptyCollection creates an empty Collection for the specified NFT type
@@ -609,23 +654,23 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
                 let collectionData = MetadataViews.NFTCollectionData(
                     storagePath: self.CollectionStoragePath,
                     publicPath: self.CollectionPublicPath,
-                    publicCollection: Type<&ArtDrop.Collection>(),
-                    publicLinkedType: Type<&ArtDrop.Collection>(),
+                    publicCollection: Type<&ArtStudio.Collection>(),
+                    publicLinkedType: Type<&ArtStudio.Collection>(),
                     createEmptyCollectionFunction: (fun (): @{NonFungibleToken.Collection} {
-                        return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.NFT>())
+                        return <-ArtStudio.createEmptyCollection(nftType: Type<@ArtStudio.NFT>())
                     })
                 )
                 return collectionData
             case Type<MetadataViews.NFTCollectionDisplay>():
-                let media = ArtDrop.getCollectionAttribute(key: "image") as! MetadataViews.Media
+                let media = ArtStudio.getCollectionAttribute(key: "image") as! MetadataViews.Media
                 return MetadataViews.NFTCollectionDisplay(
-                    name: "ArtDrop",
-                    description: "ArtDrops and Telegram governance.",
-                    externalURL: MetadataViews.ExternalURL("https://ArtDrop.gg/"),
+                    name: "ArtStudio",
+                    description: "ArtStudios and Telegram governance.",
+                    externalURL: MetadataViews.ExternalURL("https://ArtStudio.gg/"),
                     squareImage: media,
                     bannerImage: media,
                     socials: {
-                        "twitter": MetadataViews.ExternalURL("https://twitter.com/ArtDrop")
+                        "twitter": MetadataViews.ExternalURL("https://twitter.com/ArtStudio")
                     }
                 )
         }
@@ -643,7 +688,7 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
         self.totalArtist = 0
         self.totalPieces = 0
 
-        let identifier = "ArtDrop_".concat(self.account.address.toString())
+        let identifier = "ArtStudio_".concat(self.account.address.toString())
         // Set the named paths
 		self.CollectionStoragePath = StoragePath(identifier: identifier)!
 		self.CollectionPublicPath = PublicPath(identifier: identifier)!
@@ -651,10 +696,10 @@ contract ArtDrop: NonFungibleToken, ViewResolver {
 		self.AdministratorStoragePath = StoragePath(identifier: identifier.concat("Administrator"))!
 		self.ArtStoragePath = StoragePath(identifier: identifier.concat("ArtStorage"))!
 
-		// Create a Administrator resource and save it to ArtDrop account storage
+		// Create a Administrator resource and save it to ArtStudio account storage
 		let administrator <- create Administrator()
 		self.account.storage.save(<- administrator, to: self.AdministratorStoragePath)
-		// Create a ArtStorage resource and save it to ArtDrop account storage
+		// Create a ArtStorage resource and save it to ArtStudio account storage
 		let artStorage <- create ArtStorage()
 		self.account.storage.save(<- artStorage, to: self.ArtStoragePath)
     }

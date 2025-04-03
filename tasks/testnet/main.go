@@ -13,7 +13,7 @@ import (
 func main() {
 	o := Overflow(
 		WithGlobalPrintOptions(),
-		// WithNetwork("mainnet"),
+		WithNetwork("testnet"),
 	)
 
 	fmt.Println("Testing Contract")
@@ -24,20 +24,20 @@ func main() {
 
 	// Create a new Artist struct
 	o.Tx("admin/create_artist",
-		WithSigner("account"),
+		WithSigner("ArtStudio"),
 		WithArg("name", "Beeple"),
 		WithArg("biography", "Born on Earth"),
 		WithArg("nationality", "human"),
 		WithArg("preferredMedium", "digital"),
 		WithArg("socials", `{"Twitter": "www.x.com/beeple"}`),
 		WithArg("representation", ""),
-		WithArg("accountAddress", "bob"),
-	)
-	o.Script("get_all_artists")
+		WithArg("accountAddress", "ArtStudio"),
+	).Print()
+	o.Script("get_all_artists").Print()
 	// Create a new Piece blueprint
 	color.Green("Admin creates a Piece resource")
 	o.Tx("admin/create_piece_blueprint",
-		WithSigner("account"),
+		WithSigner("ArtStudio"),
 		WithArg("name", "Bull Run"),
 		WithArg("description", "A bull with a BitCoin on its back"),
 		WithArg("artistName", "Beeple"),
@@ -49,19 +49,16 @@ func main() {
 		WithArg("provenanceNotes", ""),
 		WithArg("collection", "Everydays, the 2020 Collection!"),
 		WithArg("acquisitionDetails", "N/A"),
-	)
+	).Print()
 	o.Script("get_all_pieces")
 	// Update a Piece's blueprint with sentiment feedback
 	o.Tx("admin/update_piece_sentiments",
-		WithSigner("account"),
+		WithSigner("ArtStudio"),
 		WithArg("pieceName", "Bull Run"),
 		WithArg("newViewsCount", 100),
-		WithArg("newLikesCount", 100),
-		WithArg("newSharesCount", 100),
-		WithArg("newPurchasesCount", 100),
-	)
+	).Print()
 	// Get a Piece's views
-	o.Script("get_all_pieces")
+	o.Script("get_all_pieces").Print()
 
 	/* 	o.Script("get_piece_sentiment",
 		WithArg("pieceName", "Bull Run"),

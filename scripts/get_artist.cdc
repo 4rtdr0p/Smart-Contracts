@@ -1,6 +1,6 @@
-import "ArtDrop"
+import "ArtStudio"
 
 access(all)
-fun main(name: String): ArtDrop.Artist? {
-  return ArtDrop.getArtist(name: name)
+fun main(name: String): ArtStudio.Artist? {
+  return ArtStudio.getArtist(name: name)
 }
