@@ -18,7 +18,7 @@ func main() {
 
 	fmt.Println("Testing Contract")
 
-	color.Blue("ArtStudio Contract testing")
+	color.Blue("Mneme Contract testing")
 
 	color.Green("Admin creates an Artist struct")
 

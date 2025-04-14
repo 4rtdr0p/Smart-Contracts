@@ -1,6 +1,6 @@
-import "ArtStudio"
+import "Mneme"
 
 access(all)
-fun main(): &{String: ArtStudio.Piece} {
-  return ArtStudio.getAllPieces()
+fun main(): &{String: Mneme.Piece} {
+  return Mneme.getAllPieces()
 }

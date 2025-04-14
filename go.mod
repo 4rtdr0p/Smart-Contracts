@@ -1,4 +1,4 @@
-module ArtStudio/overflow
+module Mneme/overflow
 
 go 1.23
 

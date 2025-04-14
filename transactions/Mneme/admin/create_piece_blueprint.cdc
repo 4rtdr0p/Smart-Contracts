@@ -1,7 +1,7 @@
-import "ArtStudio"
+import "Mneme"
 
 // This transaction is for the admin to create a new artist struct
-// and store it in the ArtStudio smart contract
+// and store it in the Mneme smart contract
 
 transaction(
     name: String,
@@ -17,15 +17,15 @@ transaction(
     acquisitionDetails: String?
     ) {
 
-    let Administrator: &ArtStudio.Administrator
+    let Administrator: &Mneme.Administrator
     let artistAccount: Address?
-    let productionDetails: ArtStudio.ProductionDetails
+    let productionDetails: Mneme.ProductionDetails
 
     prepare(admin: auth(BorrowValue) &Account) {
-        self.Administrator = admin.storage.borrow<&ArtStudio.Administrator>(from: ArtStudio.AdministratorStoragePath)!
-        self.artistAccount = ArtStudio.getArtist(name: artistName)?.accountAddress ?? panic("No artist found by this name: ".concat(artistName))
+        self.Administrator = admin.storage.borrow<&Mneme.Administrator>(from: Mneme.AdministratorStoragePath)!
+        self.artistAccount = Mneme.getArtist(name: artistName)?.accountAddress ?? panic("No artist found by this name: ".concat(artistName))
 
-        self.productionDetails = ArtStudio.ProductionDetails(
+        self.productionDetails = Mneme.ProductionDetails(
             "Near Mint",
             "Bamboo",
             10.0,
@@ -45,7 +45,7 @@ transaction(
             "No Certification",
             "No numbering",
             "Almost completed",
-            "Elevated by ArtStudio",
+            "Elevated by Mneme",
             )
     }
     execute {

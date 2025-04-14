@@ -1,3 +1,20 @@
+// MADE BY: Noah Naizir
+
+// This contract is for Mneme, a proof of support platform
+// on Flow. 
+
+// Mneme (Μνήμη) is one of the original three Muses in pre-Homeric Greek mythology.
+// Before the more famous Nine Muses were standardized by Hesiod (daughters of Zeus and Mnemosyne)
+// there were three older Muses:
+
+// Melete – Muse of Practice/Contemplation
+// Mneme – Muse of Memory
+// Aoide – Muse of Song
+
+// Mneme herself was seen as the preserver of knowledge and inspiration, responsible for the ability of poets, orators 
+// and artists to recall what came before and give it form. She represents the thread that links art to time and culture 
+// Literally, the memory of humanity encoded in creative work.
+
 import "FungibleToken"
 import "FlowToken"
 import "NonFungibleToken"
@@ -5,9 +22,9 @@ import "ViewResolver"
 import "MetadataViews"
 
 access(all)
-contract ArtStudio: NonFungibleToken, ViewResolver {
+contract Mneme: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
-    // ArtStudio contract-level fields.
+    // Mneme contract-level fields.
     // These contain actual values that are stored in the smart contract.
     // -----------------------------------------------------------------------
     // Dictionary to hold general collection information
@@ -17,15 +34,15 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
     // Dictionary to map Piece by name to their metadata
     // access(self) let pieces: @{String: Piece}
 
-    // Track of total supply of ArtStudio NFTs
+    // Track of total supply of Mneme NFTs
     access(all) var totalSupply: UInt64
-    // Track of total amount of Artists on ArtStudio
+    // Track of total amount of Artists on Mneme
     access(all) var totalArtist: UInt64
-    // Track of total amount of Pieces on ArtStudio
+    // Track of total amount of Pieces on Mneme
     access(all) var totalPieces: UInt64
 
     // -----------------------------------------------------------------------
-    // ArtStudio contract Events
+    // Mneme contract Events
     // ----------------------------------------------------------------------- 
     access(all) event ContractInitialized()
     access(all) event Withdraw(id: UInt64, from: Address?)
@@ -35,7 +52,7 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
     access(all) event ViewsUpdated(pieceName: String, oldViewsCount: Int64, newViewsCount: Int64)
 
     // -----------------------------------------------------------------------
-    // ArtStudio account paths
+    // Mneme account paths
     // -----------------------------------------------------------------------
 	access(all) let CollectionStoragePath: StoragePath
 	access(all) let CollectionPublicPath: PublicPath
@@ -44,7 +61,7 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
 	access(all) let ArtStoragePath: StoragePath
 
     // -----------------------------------------------------------------------
-    // ArtStudio contract-level Composite Type definitions
+    // Mneme contract-level Composite Type definitions
     // -----------------------------------------------------------------------
     // These are just *definitions* for Types that this contract
     // and other accounts can use. These definitions do not contain
@@ -67,7 +84,7 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
             return pieces
         }
         // Function to get a Piece's metadata
-        access(all) fun getPiece(_ pieceName: String): ArtStudio.Piece {
+        access(all) fun getPiece(_ pieceName: String): Mneme.Piece {
             pre {
                 self.pieces[pieceName] != nil: "There's no Piece by the name: ".concat(pieceName)
             }
@@ -111,9 +128,9 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
             _ representation: String?,
             _ accountAddress: Address) {
             // Increase total supply of Artists
-            ArtStudio.totalArtist = ArtStudio.totalArtist + 1
+            Mneme.totalArtist = Mneme.totalArtist + 1
 
-            self.id = ArtStudio.totalArtist
+            self.id = Mneme.totalArtist
             self.name = name
             self.biography = biography
             self.nationality = nationality
@@ -181,9 +198,9 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
             _ productionDetails: ProductionDetails
         ) {
             // Increase the total of Pieces supply
-            ArtStudio.totalPieces = ArtStudio.totalPieces + 1
+            Mneme.totalPieces = Mneme.totalPieces + 1
 
-            self.id = ArtStudio.totalPieces  
+            self.id = Mneme.totalPieces  
             self.name = name
             self.description = description
             self.artistName = artistName
@@ -213,7 +230,7 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
                 self.sentimentTrack.shares <= newSharesCount: "The new Shares count has to be equal or higher than the current count"
                 self.sentimentTrack.purchases <= newPurchasesCount: "The new Purchases count has to be equal or higher than the current count"
             }
-            let sentiment = &self.sentimentTrack as &ArtStudio.Sentiment
+            let sentiment = &self.sentimentTrack as &Mneme.Sentiment
             let oldCount = sentiment.views
             sentiment.updateSentiment(newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
 
@@ -353,24 +370,24 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
     }
 
 
-    /// The resource that represents a VenezulaNFT
+    /// The resource that represents a Mneme NFT
 	access(all) resource NFT: NonFungibleToken.NFT {
         access(all) let id: UInt64
         access(all) let metadata: AnyStruct
 
         init() {
-            self.id = ArtStudio.totalSupply
+            self.id = Mneme.totalSupply
             self.metadata = {"AnyStruct": 2}
 
                         // Increment the global Cards IDs
-            ArtStudio.totalSupply = ArtStudio.totalSupply + 1
+            Mneme.totalSupply = Mneme.totalSupply + 1
         }
 
         /// createEmptyCollection creates an empty Collection
         /// and returns it to the caller so that they can own NFTs
         /// @{NonFungibleToken.Collection}
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <- ArtStudio.createEmptyCollection(nftType: Type<@ArtStudio.NFT>())
+            return <- Mneme.createEmptyCollection(nftType: Type<@Mneme.NFT>())
         }
         // Standard to return NFT's metadata
 		access(all) view fun getViews(): [Type] {
@@ -412,11 +429,11 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
 						traits: self.resolveView(Type<MetadataViews.Traits>()) as! MetadataViews.Traits?
 					)
 				case Type<MetadataViews.NFTCollectionData>():
-					return ArtStudio.resolveContractView(resourceType: Type<@ArtStudio.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
+					return Mneme.resolveContractView(resourceType: Type<@Mneme.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
         		case Type<MetadataViews.ExternalURL>():
-        			return ArtStudio.getCollectionAttribute(key: "website") as! MetadataViews.ExternalURL
+        			return Mneme.getCollectionAttribute(key: "website") as! MetadataViews.ExternalURL
 		        case Type<MetadataViews.NFTCollectionDisplay>():
-					return ArtStudio.resolveContractView(resourceType: Type<@ArtStudio.NFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
+					return Mneme.resolveContractView(resourceType: Type<@Mneme.NFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
 				case Type<MetadataViews.Medias>():
                     let metadata = 10
 					if metadata != nil {
@@ -434,7 +451,7 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
         		case Type<MetadataViews.Royalties>():
           			return MetadataViews.Royalties([
             			MetadataViews.Royalty(
-              				receiver: getAccount(ArtStudio.account.address).capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver),
+              				receiver: getAccount(Mneme.account.address).capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver),
               				cut: 0.5, // 5% royalty on secondary sales
               				description: "The deployer gets 5% of every secondary sale."
             			)
@@ -463,32 +480,32 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
         /// Returns a list of NFT types that this receiver accepts
         access(all) view fun getSupportedNFTTypes(): {Type: Bool} {
             let supportedTypes: {Type: Bool} = {}
-            supportedTypes[Type<@ArtStudio.NFT>()] = true
+            supportedTypes[Type<@Mneme.NFT>()] = true
             return supportedTypes
         }
         /// Returns whether or not the given type is accepted by the collection
         /// A collection that can accept any type should just return true by default
         access(all) view fun isSupportedNFTType(type: Type): Bool {
-            return type == Type<@ArtStudio.NFT>()
+            return type == Type<@Mneme.NFT>()
         }
-		// Withdraw removes a ArtStudio from the collection and moves it to the caller(for Trading)
+		// Withdraw removes a Mneme from the collection and moves it to the caller(for Trading)
 		access(NonFungibleToken.Withdraw) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
 			let token <- self.ownedNFTs.remove(key: withdrawID) 
-                ?? panic("This Collection doesn't own a ArtStudio by id: ".concat(withdrawID.toString()))
+                ?? panic("This Collection doesn't own a Mneme by id: ".concat(withdrawID.toString()))
 
 			emit Withdraw(id: token.id, from: self.owner?.address)
 
 			return <-token
 		}
-		// Deposit takes a ArtStudio and adds it to the collections dictionary
+		// Deposit takes a Mneme and adds it to the collections dictionary
 		// and adds the ID to the id array
 		access(all) fun deposit(token: @{NonFungibleToken.NFT}) {
-			let newArtStudio <- token as! @NFT
-			let id: UInt64 = newArtStudio.id
-			// Add the new ArtStudio to the dictionary
-            let oldArtStudio <- self.ownedNFTs[id] <- newArtStudio
-            // Destroy old ArtStudio in that slot
-            destroy oldArtStudio
+			let newMneme <- token as! @NFT
+			let id: UInt64 = newMneme.id
+			// Add the new Mneme to the dictionary
+            let oldMneme <- self.ownedNFTs[id] <- newMneme
+            // Destroy old Mneme in that slot
+            destroy oldMneme
 
 			emit Deposit(id: id, to: self.owner?.address)
 		}
@@ -517,18 +534,18 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
         /// and returns it to the caller
         /// @return A an empty collection of the same type
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <-ArtStudio.createEmptyCollection(nftType: Type<@ArtStudio.NFT>())
+            return <-Mneme.createEmptyCollection(nftType: Type<@Mneme.NFT>())
         }
     }
     // -----------------------------------------------------------------------
-    // ArtStudio Administrator Resource
+    // Mneme Administrator Resource
     // -----------------------------------------------------------------------
     // Admin is a special authorization resource that 
     // allows the owner to perform important functions to modify the 
     // various aspects of the Artists, Pieces, and Collections
     access(all) resource Administrator {
         // createArtist creates a new Artist struct 
-        // and stores it in the Artist dictionary in the ArtStudio smart contract
+        // and stores it in the Artist dictionary in the Mneme smart contract
         //
         // Returns: the ID of the new Artist object
         //
@@ -544,12 +561,12 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
             // Create new Artist struct
             let newArtist = Artist(name, biography, nationality, preferredMedium, socials, representation, accountAddress)
             // Save artist to the dictionary stored inside the smart contract
-            ArtStudio.artists[name] = newArtist
+            Mneme.artists[name] = newArtist
 
             return newArtist.id
         }
         // createPiece creates a new Piece resource 
-        // and stores it in the Piece dictionary in the ArtStudio smart contract
+        // and stores it in the Piece dictionary in the Mneme smart contract
         //
         // Returns: the ID of the new Piece object
         //
@@ -574,7 +591,7 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
             // emit event
             emit PieceCreated(id: newPiece.id, name: newPiece.name, artist: newPiece.artistName)
             // borrow ArtStorage from Account
-            let storage = ArtStudio.account.storage.borrow<&ArtStudio.ArtStorage>(from: ArtStudio.ArtStoragePath)!
+            let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
             // Store the new resource inside the smart contract
             storage.addPiece(newPiece: newPiece)
 
@@ -591,17 +608,17 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
             newPurchasesCount: Int64
         ) {
             // borrow ArtStorage from Account
-            let storage = ArtStudio.account.storage.borrow<&ArtStudio.ArtStorage>(from: ArtStudio.ArtStoragePath)!
+            let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
             storage.updateSentiment(pieceName, newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
         }
     }
     //
     // -----------------------------------------------------------------------
-    // ArtStudio private functions
+    // Mneme private functions
     // -----------------------------------------------------------------------
 
     // -----------------------------------------------------------------------
-    // ArtStudio public functions
+    // Mneme public functions
     // -----------------------------------------------------------------------
     // public function to get a dictionary of all artists
     access(all) fun getArtists(): {String: Artist} {
@@ -613,8 +630,8 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
         ?? panic("No artist by name: ".concat(name))
     }
     // public function to get a dictionary of all artists
-    access(all) fun getAllPieces(): &{String: ArtStudio.Piece} {
-        let storage = ArtStudio.account.storage.borrow<&ArtStudio.ArtStorage>(from: ArtStudio.ArtStoragePath)!
+    access(all) fun getAllPieces(): &{String: Mneme.Piece} {
+        let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
         let pieces = storage.getAllPieces()
 
         return pieces
@@ -622,12 +639,12 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
     // public function to get the sentiment on a Piece
     access(all) fun getPieceSentiment(pieceName: String): Sentiment {
         // borrow ArtStorage from Account
-        let storage = ArtStudio.account.storage.borrow<&ArtStudio.ArtStorage>(from: ArtStudio.ArtStoragePath)!
+        let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
         let piece = storage.getPiece(pieceName)
         return piece.sentimentTrack
     }
     // -----------------------------------------------------------------------
-    // ArtStudio Generic or Standard public functions
+    // Mneme Generic or Standard public functions
     // -----------------------------------------------------------------------
     //
     /// createEmptyCollection creates an empty Collection for the specified NFT type
@@ -654,23 +671,23 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
                 let collectionData = MetadataViews.NFTCollectionData(
                     storagePath: self.CollectionStoragePath,
                     publicPath: self.CollectionPublicPath,
-                    publicCollection: Type<&ArtStudio.Collection>(),
-                    publicLinkedType: Type<&ArtStudio.Collection>(),
+                    publicCollection: Type<&Mneme.Collection>(),
+                    publicLinkedType: Type<&Mneme.Collection>(),
                     createEmptyCollectionFunction: (fun (): @{NonFungibleToken.Collection} {
-                        return <-ArtStudio.createEmptyCollection(nftType: Type<@ArtStudio.NFT>())
+                        return <-Mneme.createEmptyCollection(nftType: Type<@Mneme.NFT>())
                     })
                 )
                 return collectionData
             case Type<MetadataViews.NFTCollectionDisplay>():
-                let media = ArtStudio.getCollectionAttribute(key: "image") as! MetadataViews.Media
+                let media = Mneme.getCollectionAttribute(key: "image") as! MetadataViews.Media
                 return MetadataViews.NFTCollectionDisplay(
-                    name: "ArtStudio",
-                    description: "ArtStudios and Telegram governance.",
-                    externalURL: MetadataViews.ExternalURL("https://ArtStudio.gg/"),
+                    name: "Mneme",
+                    description: "Mnemes and Telegram governance.",
+                    externalURL: MetadataViews.ExternalURL("https://Mneme.gg/"),
                     squareImage: media,
                     bannerImage: media,
                     socials: {
-                        "twitter": MetadataViews.ExternalURL("https://twitter.com/ArtStudio")
+                        "twitter": MetadataViews.ExternalURL("https://twitter.com/Mneme")
                     }
                 )
         }
@@ -688,7 +705,7 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
         self.totalArtist = 0
         self.totalPieces = 0
 
-        let identifier = "ArtStudio_".concat(self.account.address.toString())
+        let identifier = "Mneme_".concat(self.account.address.toString())
         // Set the named paths
 		self.CollectionStoragePath = StoragePath(identifier: identifier)!
 		self.CollectionPublicPath = PublicPath(identifier: identifier)!
@@ -696,10 +713,10 @@ contract ArtStudio: NonFungibleToken, ViewResolver {
 		self.AdministratorStoragePath = StoragePath(identifier: identifier.concat("Administrator"))!
 		self.ArtStoragePath = StoragePath(identifier: identifier.concat("ArtStorage"))!
 
-		// Create a Administrator resource and save it to ArtStudio account storage
+		// Create a Administrator resource and save it to Mneme account storage
 		let administrator <- create Administrator()
 		self.account.storage.save(<- administrator, to: self.AdministratorStoragePath)
-		// Create a ArtStorage resource and save it to ArtStudio account storage
+		// Create a ArtStorage resource and save it to Mneme account storage
 		let artStorage <- create ArtStorage()
 		self.account.storage.save(<- artStorage, to: self.ArtStoragePath)
     }

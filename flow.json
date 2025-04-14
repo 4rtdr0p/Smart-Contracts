@@ -1,6 +1,7 @@
 {
 	"contracts": {
-		"ArtStudio": "contracts/ArtStudio.cdc"
+		"Pistis": "contracts/Pistis.cdc",
+		"Mneme": "contracts/Mneme.cdc"
 	},
 	"dependencies": {
 		"Burner": {
@@ -83,7 +84,7 @@
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
 	"accounts": {
-		"testnet-ArtStudio": {
+		"testnet-Mneme": {
 			"address": "c9bebc18db58bae2",
 			"key": "21f33a43c2a2bcdd7ca20a32ba46a1dafd5ad5091ec344b836e6ac65658bf330"
 		},
@@ -102,12 +103,13 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
-				"ArtStudio"
+				"Pistis",
+				"Mneme"
 			]
 		},
 		"testnet": {
-			"testnet-ArtStudio": [
-				"ArtStudio"
+			"testnet-Mneme": [
+				"Mneme"
 			]
 		}
 	}
