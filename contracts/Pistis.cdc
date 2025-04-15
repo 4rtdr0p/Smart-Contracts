@@ -24,6 +24,7 @@ import "FlowToken"
 import "NonFungibleToken"
 import "ViewResolver"
 import "MetadataViews"
+import "FindViews"
 
 access(all)
 contract Pistis: NonFungibleToken, ViewResolver {
@@ -91,14 +92,16 @@ contract Pistis: NonFungibleToken, ViewResolver {
         access(all) let id: UInt64
         // Project to which this Metadata belongs to
         access(all) let projectName: String  
-        access(all) let metadata: Type
+        access(all) let nftType: Type
+        access(all) let nftRef: Capability<&{NonFungibleToken.NFT}>
 
-        init(_ projectName: String,_ metadata: Type) {
+        init(_ projectName: String,_ nftType: Type, _ metadataTraits: Capability<&{NonFungibleToken.NFT}>) {
 /*             pre {
                 Pistis.projects[projectName] != nil: "There's no project on Pistis named: ".concat(projectName)
             } */
             self.projectName = projectName
-            self.metadata = metadata
+            self.nftType = nftType
+            self.nftRef = metadataTraits
             // Increment the global Metadatas IDs
             Pistis.totalMetadatas = Pistis.totalMetadatas + 1
             self.id = Pistis.totalMetadatas
@@ -277,11 +280,11 @@ contract Pistis: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     
     // Function to create a new Project
-    access(all) fun createProject(projectName: String, metadata: Type) {
+    access(all) fun createProject(projectName: String, nftType: Type, nftCap: Capability<&{NonFungibleToken.NFT}>) {
         pre {
             Pistis.projects[projectName] == nil: "There's already a project on Pistis named: ".concat(projectName)
         }
-        Pistis.projects[projectName] = MetadataStruct(projectName, metadata)
+        Pistis.projects[projectName] = MetadataStruct(projectName, nftType, nftCap)
 
     }
 
@@ -303,6 +306,12 @@ contract Pistis: NonFungibleToken, ViewResolver {
     // Function to get all the projects on Pistis
     access(all) fun getProjects(): {String: Pistis.MetadataStruct} {
         return self.projects
+    }
+    // Function to get all the projects on Pistis
+    access(all) fun getProjectMetadata(projectName: String): Pistis.MetadataStruct {
+        let project = self.projects[projectName]!
+
+        return project
     }
     /// Function that returns all the Metadata Views implemented by a Non Fungible Token
     ///

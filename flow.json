@@ -1,7 +1,8 @@
 {
 	"contracts": {
+		"Mneme": "contracts/Mneme.cdc",
 		"Pistis": "contracts/Pistis.cdc",
-		"Mneme": "contracts/Mneme.cdc"
+		"imgHost": "contracts/imgHost.cdc"
 	},
 	"dependencies": {
 		"Burner": {
@@ -11,6 +12,13 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "f233dcee88fe0abe",
 				"testnet": "9a0766d93b6608b7"
+			}
+		},
+		"FindViews": {
+			"source": "mainnet://097bafa4e0b48eef.FindViews",
+			"hash": "969178475520771cdb8fcaa34eeb679b4b9650a8d80b68d50549dc40d19c0f83",
+			"aliases": {
+				"mainnet": "097bafa4e0b48eef"
 			}
 		},
 		"FlowToken": {
@@ -84,10 +92,6 @@
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
 	"accounts": {
-		"testnet-Mneme": {
-			"address": "c9bebc18db58bae2",
-			"key": "21f33a43c2a2bcdd7ca20a32ba46a1dafd5ad5091ec344b836e6ac65658bf330"
-		},
 		"emulator-account": {
 			"address": "f8d6e0586b0a20c7",
 			"key": {
@@ -98,18 +102,23 @@
 		"emulator-bob": {
 			"address": "f3fcd2c1a78f5eee",
 			"key": "3b90c6ed0051a32a9bbbd8d584d04f9db4948a63974e0a4ac70d637193d7e4c7"
+		},
+		"testnet-Mneme": {
+			"address": "c9bebc18db58bae2",
+			"key": "21f33a43c2a2bcdd7ca20a32ba46a1dafd5ad5091ec344b836e6ac65658bf330"
 		}
 	},
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
 				"Pistis",
-				"Mneme"
+				"Mneme",
+				"FindViews"
 			]
 		},
 		"testnet": {
 			"testnet-Mneme": [
-				"Mneme"
+				"imgHost"
 			]
 		}
 	}

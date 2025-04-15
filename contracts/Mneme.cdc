@@ -373,14 +373,14 @@ contract Mneme: NonFungibleToken, ViewResolver {
     /// The resource that represents a Mneme NFT
 	access(all) resource NFT: NonFungibleToken.NFT {
         access(all) let id: UInt64
-        access(all) let metadata: AnyStruct
+        access(all) let metadata: {String: AnyStruct}
 
         init() {
+            // Increment the global Cards IDs
+            Mneme.totalSupply = Mneme.totalSupply + 1
             self.id = Mneme.totalSupply
             self.metadata = {"AnyStruct": 2}
 
-                        // Increment the global Cards IDs
-            Mneme.totalSupply = Mneme.totalSupply + 1
         }
 
         /// createEmptyCollection creates an empty Collection
@@ -416,7 +416,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             			)
 					)
 				case Type<MetadataViews.Traits>():
-					return MetadataViews.dictToTraits(dict: {"String": 2}, excludedNames: nil)
+					return MetadataViews.dictToTraits(dict: self.metadata, excludedNames: nil)
 				case Type<MetadataViews.NFTView>():
 					return MetadataViews.NFTView(
 						id: self.id,
@@ -611,6 +611,24 @@ contract Mneme: NonFungibleToken, ViewResolver {
             let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
             storage.updateSentiment(pieceName, newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
         }
+        // Mint Piece NFT
+        access(all)
+        fun mintPiece(pieceName: String, recipient: Address) {
+            let nft <- create NFT()
+
+			if let recipientCollection = getAccount(recipient)
+				.capabilities.borrow<&{NonFungibleToken.Receiver}>(Mneme.CollectionPublicPath) 
+				{
+					recipientCollection.deposit(token: <- nft)
+			} else {
+				destroy nft
+/* 				if let storage = &Piece.nftStorage[recipient] as &{UInt64: NFT}? {
+					storage[nft.id] <-! nft
+				} else {
+					Piece.nftStorage[recipient] <-! {nft.id: <- nft}
+				} */
+			}
+        }
     }
     //
     // -----------------------------------------------------------------------
@@ -719,6 +737,12 @@ contract Mneme: NonFungibleToken, ViewResolver {
 		// Create a ArtStorage resource and save it to Mneme account storage
 		let artStorage <- create ArtStorage()
 		self.account.storage.save(<- artStorage, to: self.ArtStoragePath)
+		// Create a Collection resource and save it to storage
+		let collection <- create Collection()
+		self.account.storage.save(<- collection, to: self.CollectionStoragePath)
+        // create a public capability for the collection
+	    let collectionCap = self.account.capabilities.storage.issue<&Mneme.Collection>(self.CollectionStoragePath)
+		self.account.capabilities.publish(collectionCap, at: self.CollectionPublicPath)
     }
 
 }

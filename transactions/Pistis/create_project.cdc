@@ -12,7 +12,8 @@ transaction(newProjectName: String) {
     }
     execute {
         // let metadata = Mneme.resolveContractView(resourceType: resourceType, viewType: viewType)
-        let type = Type<@Pistis.NFT>()
-        Pistis.createProject(projectName: newProjectName, metadata: type)
+        let type = Type<@Mneme.NFT>()
+        let cap = 
+        Pistis.createProject(projectName: newProjectName, metadata: type, nftCap: )
     }
 }
