@@ -91,6 +91,14 @@ contract Mneme: NonFungibleToken, ViewResolver {
             let metadata = self.pieces[pieceName]!
             return metadata
         }
+        // Function to get a Piece's price
+        access(all) fun getPiecePrice(_ pieceName: String): UFix64 {
+            pre {
+                self.pieces[pieceName] != nil: "There's no Piece by the name: ".concat(pieceName)
+            }
+            let piece = self.pieces[pieceName]!
+            return piece.price
+        }
         // Function to add a Piece to the storage
         access(all) fun addPiece(newPiece: Piece) {
             self.pieces[newPiece.name] = newPiece
@@ -118,6 +126,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         access(all) var socials: {String: String}
         access(all) var representation: String?
         access(all) let accountAddress: Address
+        access(all) var communityRoyalties: UFix64
 
         init(
             _ name: String,
@@ -126,7 +135,9 @@ contract Mneme: NonFungibleToken, ViewResolver {
             _ preferredMedium: String,
             _ socials: {String: String},
             _ representation: String?,
-            _ accountAddress: Address) {
+            _ accountAddress: Address,
+            _ communityRoyalties: UFix64
+        ) {
             // Increase total supply of Artists
             Mneme.totalArtist = Mneme.totalArtist + 1
 
@@ -138,7 +149,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.socials = socials
             self.representation = representation
             self.accountAddress = accountAddress
-
+            self.communityRoyalties = communityRoyalties
             // Emit event
             emit ArtistCreated(id: self.id, name: self.name, accountAddress: self.accountAddress)
         }
@@ -182,6 +193,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
         access(all) let productionDetails: ProductionDetails
         // A track of this Piece sentiment
         access(all) let sentimentTrack: Sentiment
+        // Price of the Piece
+        access(all) let price: UFix64
 
         init(
             _ name: String,
@@ -195,7 +208,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
             _ subjectMatter: String,
             _ provenanceNotes: String,
             _ acquisitionDetails: String?,
-            _ productionDetails: ProductionDetails
+            _ productionDetails: ProductionDetails,
+            _ price: UFix64
         ) {
             // Increase the total of Pieces supply
             Mneme.totalPieces = Mneme.totalPieces + 1
@@ -215,6 +229,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.productionDetails = productionDetails
             self.collections = []
             self.sentimentTrack = Sentiment()
+            self.price = price
         }
         // Functionality around a Piece's blueprint
         access(all)
@@ -418,14 +433,15 @@ contract Mneme: NonFungibleToken, ViewResolver {
     /// The resource that represents a Mneme NFT
 	access(all) resource NFT: NonFungibleToken.NFT {
         access(all) let id: UInt64
+        access(all) let artistName: String
         access(all) let metadata: {String: AnyStruct}
 
-        init() {
+        init(artistName: String) {
             // Increment the global Cards IDs
             Mneme.totalSupply = Mneme.totalSupply + 1
             self.id = Mneme.totalSupply
             self.metadata = {"AnyStruct": 2}
-
+            self.artistName = artistName
         }
 
         /// createEmptyCollection creates an empty Collection
@@ -494,11 +510,13 @@ contract Mneme: NonFungibleToken, ViewResolver {
 						)
 					}
         		case Type<MetadataViews.Royalties>():
+                    let artist = Mneme.getArtist(name: self.artistName)!
+                    let communityRoyalties = artist.communityRoyalties
           			return MetadataViews.Royalties([
             			MetadataViews.Royalty(
               				receiver: getAccount(Mneme.account.address).capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver),
-              				cut: 0.5, // 5% royalty on secondary sales
-              				description: "The deployer gets 5% of every secondary sale."
+              				cut: communityRoyalties, 
+              				description: artist.name.concat("'s community pool percentage is ").concat(communityRoyalties.toString())
             			)
           			])
 				case Type<MetadataViews.Serial>():
@@ -601,12 +619,13 @@ contract Mneme: NonFungibleToken, ViewResolver {
             preferredMedium: String,
             socials: {String: String},
             representation: String?,
-            accountAddress: Address
+            accountAddress: Address,
+            communityRoyalties: UFix64
         ): UInt64 {
             // Create the community pool
             self.createCommunityPool(artistName: name)
             // Create new Artist struct
-            let newArtist = Artist(name, biography, nationality, preferredMedium, socials, representation, accountAddress)
+            let newArtist = Artist(name, biography, nationality, preferredMedium, socials, representation, accountAddress, communityRoyalties)
             // Save artist to the dictionary stored inside the smart contract
             Mneme.artists[name] = newArtist
 
@@ -632,10 +651,11 @@ contract Mneme: NonFungibleToken, ViewResolver {
             subjectMatter: String,
             provenanceNotes: String,
             acquisitionDetails: String?,
-            productionDetails: ProductionDetails
+            productionDetails: ProductionDetails,
+            price: UFix64
         ): UInt64 {
             // Create new Piece resource
-            let newPiece = Piece(name, description, artistName, artistAccount, creationDate, creationLocation, artType, medium, subjectMatter, provenanceNotes, acquisitionDetails, productionDetails)
+            let newPiece = Piece(name, description, artistName, artistAccount, creationDate, creationLocation, artType, medium, subjectMatter, provenanceNotes, acquisitionDetails, productionDetails, price)
             // store the new id 
             let newID = newPiece.id
             // emit event
@@ -663,8 +683,24 @@ contract Mneme: NonFungibleToken, ViewResolver {
         }
         // Mint Piece NFT
         access(all)
-        fun mintPiece(pieceName: String, recipient: Address) {
-            let nft <- create NFT()
+        fun mintPiece(
+            pieceName: String,
+            artistName: String,
+            recipient: Address) {
+            pre {
+                Mneme.artists[artistName] != nil: "This artist does not exist"
+            }
+            let piecePrice = Mneme.getPiecePrice(pieceName)
+            let artistRoyalties = Mneme.artists[artistName]!.communityRoyalties
+            let royalties = piecePrice * artistRoyalties
+            // Get a reference to Mneme's stored vault
+            let vaultRef = Mneme.account.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)!
+            let path = PublicPath(identifier: "Mneme_".concat(artistName).concat("_community_pool"))!
+            // Get contract's Vault
+		    let artistTreasury = getAccount(Mneme.account.address).capabilities.borrow<&{FungibleToken.Receiver}>(path)!
+            artistTreasury.deposit(from: <- vaultRef.withdraw(amount: royalties))
+            // Mint the NFT
+            let nft <- create NFT(artistName: pieceName)
 
 			if let recipientCollection = getAccount(recipient)
 				.capabilities.borrow<&{NonFungibleToken.Receiver}>(Mneme.CollectionPublicPath) 
@@ -728,6 +764,12 @@ contract Mneme: NonFungibleToken, ViewResolver {
         let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
         let piece = storage.getPiece(pieceName)
         return piece.sentimentTrack
+    }
+    // public function to get a Piece's price
+    access(all) fun getPiecePrice(_ pieceName: String): UFix64 {
+        let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+        let piece = storage.getPiece(pieceName)
+        return piece.price
     }
     // -----------------------------------------------------------------------
     // Mneme Generic or Standard public functions
