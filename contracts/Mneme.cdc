@@ -368,8 +368,53 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.purchases = newCount
         }
     }
+    // Pistis (Πίστις) is not a goddess in the traditional Olympian sense
+    // but rather a personified spirit (daimona) representing:
+    // Good Faith, Trust, Loyalty and Reliability
 
+    // Pistis is a proof-of-support syste where:
 
+    // Collectors pledge soulbound tokens as a form of trust in creators. (Pledged trust/faith)
+    // Artists distribute rewards in return, honoring loyalty. (Proof of loyalty & belief)
+    // Multipliers reflect belief over time, rewarding early conviction. (Honoring those who believed)
+    // It’s a trust economy based on On—chain Provenance and that’s exactly what Pistis governs.
+    access(all) resource Pistis {
+        // Soulbound token
+        access(all) let limit: Int64
+        access(all) var currentSupport: Int64
+        access(all) let supportedArtists: {String: Int64}
+        init(limit: Int64) {
+            self.limit = limit
+            self.currentSupport = 0
+            self.supportedArtists = {}
+        }
+        access(all) fun addSupport(artistName: String, supportAmount: Int64) {
+            pre {
+                Mneme.artists[artistName] != nil: "This artist does not exist"
+                self.currentSupport + supportAmount <= 100: "This will exceed the support limit of 100"
+                // Verify if this collector owns a piece from this artist
+            }
+            let currentCount = self.supportedArtists[artistName]!
+            self.supportedArtists[artistName] = currentCount + supportAmount
+            self.currentSupport = self.currentSupport + supportAmount
+
+            // Emit event
+            // emit Support(artistName: artistName, supportAmount: supportAmount)
+        }
+        access(all) fun removeSupport(artistName: String, supportAmount: Int64) {
+            pre {
+                self.supportedArtists[artistName] != nil: "This artist is not supported"
+                self.supportedArtists[artistName]! >= supportAmount: "You're trying to remove more support than you have on this artist"
+            }
+            let currentCount = self.supportedArtists[artistName]!
+            self.supportedArtists[artistName] = currentCount - supportAmount
+            self.currentSupport = self.currentSupport - supportAmount
+
+            // Emit event
+            // emit Support(artistName: artistName, supportAmount: supportAmount)
+        }
+        
+    }
     /// The resource that represents a Mneme NFT
 	access(all) resource NFT: NonFungibleToken.NFT {
         access(all) let id: UInt64
@@ -558,12 +603,17 @@ contract Mneme: NonFungibleToken, ViewResolver {
             representation: String?,
             accountAddress: Address
         ): UInt64 {
+            // Create the community pool
+            self.createCommunityPool(artistName: name)
             // Create new Artist struct
             let newArtist = Artist(name, biography, nationality, preferredMedium, socials, representation, accountAddress)
             // Save artist to the dictionary stored inside the smart contract
             Mneme.artists[name] = newArtist
 
             return newArtist.id
+
+            // emit event
+            // emit ArtistCreated(id: newArtist.id, name: newArtist.name)
         }
         // createPiece creates a new Piece resource 
         // and stores it in the Piece dictionary in the Mneme smart contract
@@ -629,6 +679,15 @@ contract Mneme: NonFungibleToken, ViewResolver {
 				} */
 			}
         }
+        // Helper function to create the community pool
+        access(self) fun createCommunityPool(artistName: String) {
+            pre {
+                Mneme.artists[artistName] == nil: "This artist already has a community pool"
+            }
+            let path = "Mneme_".concat(artistName).concat("_community_pool")
+            let communityPool <- FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
+            Mneme.account.storage.save(<- communityPool, to: StoragePath(identifier: path)!)
+        }
     }
     //
     // -----------------------------------------------------------------------
@@ -646,6 +705,15 @@ contract Mneme: NonFungibleToken, ViewResolver {
     access(all) fun getArtist(name: String): Artist? {
         return self.artists[name]
         ?? panic("No artist by name: ".concat(name))
+    }
+    // Public function to get an Artist's community pool
+    access(all) fun getArtistCommunityPool(artistName: String): UFix64 {
+        pre {
+            Mneme.artists[artistName] != nil: "This artist does not exist"
+        }
+        let path = "Mneme_".concat(artistName).concat("_community_pool")
+        let communityPool = Mneme.account.storage.borrow<&FlowToken.Vault>(from: StoragePath(identifier: path)!)!
+        return communityPool.balance
     }
     // public function to get a dictionary of all artists
     access(all) fun getAllPieces(): &{String: Mneme.Piece} {

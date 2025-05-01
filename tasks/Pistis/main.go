@@ -21,6 +21,7 @@ func main() {
 	color.Blue("Pistis Contract testing")
 
 	color.Green("User creates a new project on the Pistis contract")
+	//
 	// Create a new Artist struct on the Mneme contract
 	o.Tx("Mneme/admin/create_artist",
 		WithSigner("account"),
@@ -56,11 +57,7 @@ func main() {
 		WithSigner("account"),
 		WithArg("recipient", "account"),
 	)
-	// TEST
-	//
-	o.Script("Pistis/test",
-		WithArg("address", "account"),
-	)
+
 	// Create a new Artist struct
 
 	/* 	o.Tx("Pistis/create_project",

@@ -23,7 +23,7 @@ import "FungibleToken"
 import "FlowToken"
 import "NonFungibleToken"
 import "ViewResolver"
-import "MetadataViews"
+import "MetadataViews" 
 import "FindViews"
 
 access(all)
