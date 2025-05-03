@@ -32,6 +32,7 @@ func main() {
 		WithArg("socials", `{"Twitter": "www.x.com/beeple"}`),
 		WithArg("representation", ""),
 		WithArg("accountAddress", "bob"),
+		WithArg("communityRoyalties", "0.1"),
 	)
 	o.Script("get_all_artists")
 	// get that artist's community pool
@@ -53,6 +54,7 @@ func main() {
 		WithArg("provenanceNotes", ""),
 		WithArg("collection", "Everydays, the 2020 Collection!"),
 		WithArg("acquisitionDetails", "N/A"),
+		WithArg("price", "1000.0"),
 	)
 	o.Script("get_all_pieces")
 	// Update a Piece's blueprint with sentiment feedback
@@ -71,6 +73,7 @@ func main() {
 	o.Tx("mneme/admin/mint_piece",
 		WithSigner("account"),
 		WithArg("pieceName", "Bull Run"),
+		WithArg("artistName", "Beeple"),
 		WithArg("recipient", "account"),
 	)
 	// Check the artist's pool

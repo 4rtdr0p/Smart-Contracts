@@ -723,6 +723,11 @@ contract Mneme: NonFungibleToken, ViewResolver {
             let path = "Mneme_".concat(artistName).concat("_community_pool")
             let communityPool <- FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
             Mneme.account.storage.save(<- communityPool, to: StoragePath(identifier: path)!)
+            // Create a public capability to the stored Vault that only exposes
+            // the `deposit` method through the `Receiver` interface
+            let receiverCapability = Mneme.account.capabilities.storage.issue<&FlowToken.Vault>(StoragePath(identifier: path)!)
+            Mneme.account.capabilities.publish(receiverCapability, at: PublicPath(identifier: path)!)
+            // Emit event
         }
     }
     //
@@ -747,9 +752,10 @@ contract Mneme: NonFungibleToken, ViewResolver {
         pre {
             Mneme.artists[artistName] != nil: "This artist does not exist"
         }
-        let path = "Mneme_".concat(artistName).concat("_community_pool")
-        let communityPool = Mneme.account.storage.borrow<&FlowToken.Vault>(from: StoragePath(identifier: path)!)!
-        return communityPool.balance
+
+        let path = PublicPath(identifier: "Mneme_".concat(artistName).concat("_community_pool"))!
+		let artistTreasury = getAccount(Mneme.account.address).capabilities.borrow<&{FungibleToken.Balance}>(path)!
+        return artistTreasury.balance
     }
     // public function to get a dictionary of all artists
     access(all) fun getAllPieces(): &{String: Mneme.Piece} {

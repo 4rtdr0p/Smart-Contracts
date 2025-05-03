@@ -14,7 +14,8 @@ transaction(
     subjectMatter: String,
     provenanceNotes: String,
     collection: String?,
-    acquisitionDetails: String?
+    acquisitionDetails: String?,
+    price: UFix64
     ) {
 
     let Administrator: &Mneme.Administrator
@@ -61,6 +62,7 @@ transaction(
             subjectMatter: subjectMatter,
             provenanceNotes: provenanceNotes,
             acquisitionDetails: acquisitionDetails,
-            productionDetails: self.productionDetails)
+            productionDetails: self.productionDetails,
+            price: price)
     }
 }

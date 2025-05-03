@@ -10,7 +10,8 @@ transaction(
     preferredMedium: String,
     socials: {String: String},
     representation: String?,
-    accountAddress: Address) {
+    accountAddress: Address,
+    communityRoyalties: UFix64) {
 
     let Administrator: &Mneme.Administrator
 
@@ -25,6 +26,7 @@ transaction(
             preferredMedium: preferredMedium,
             socials: socials,
             representation: representation,
-            accountAddress: accountAddress)
+            accountAddress: accountAddress,
+            communityRoyalties: communityRoyalties)
     }
 }
