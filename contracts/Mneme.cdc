@@ -47,6 +47,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
     access(all) event ContractInitialized()
     access(all) event Withdraw(id: UInt64, from: Address?)
 	access(all) event Deposit(id: UInt64, to: Address?)
+    access(all) event PistisCreated(id: UInt64, accountAddress: Address)
     access(all) event ArtistCreated(id: UInt64, name: String, accountAddress: Address)
     access(all) event PieceCreated(id: UInt64, name: String, artist: String)
     access(all) event ViewsUpdated(pieceName: String, oldViewsCount: Int64, newViewsCount: Int64)
@@ -59,6 +60,9 @@ contract Mneme: NonFungibleToken, ViewResolver {
 	access(all) let CollectionPrivatePath: PrivatePath
 	access(all) let AdministratorStoragePath: StoragePath
 	access(all) let ArtStoragePath: StoragePath
+	access(all) let PistisStoragePath: StoragePath
+	access(all) let PistisPublicPath: PublicPath
+
 
     // -----------------------------------------------------------------------
     // Mneme contract-level Composite Type definitions
@@ -398,10 +402,12 @@ contract Mneme: NonFungibleToken, ViewResolver {
         access(all) let limit: Int64
         access(all) var currentSupport: Int64
         access(all) let supportedArtists: {String: Int64}
-        init(limit: Int64) {
-            self.limit = limit
+        init(colletor: Address) {
+            self.limit = 100
             self.currentSupport = 0
             self.supportedArtists = {}
+
+            emit PistisCreated(id: self.uuid, accountAddress: colletor)
         }
         access(all) fun addSupport(artistName: String, supportAmount: Int64) {
             pre {
@@ -786,6 +792,11 @@ contract Mneme: NonFungibleToken, ViewResolver {
     access(all) fun createEmptyCollection(nftType: Type): @{NonFungibleToken.Collection} {
         return <- create Collection()
     }
+    /// createEmptyCollection creates an empty Collection for the specified NFT type
+    /// and returns it to the caller so that they can own NFTs
+    access(all) fun createEmptyPistis(colletor: Address): @Pistis {
+        return <- create Pistis(colletor: colletor)
+    }
     /// Function that returns all the Metadata Views implemented by a Non Fungible Token
     ///
     /// @return An array of Types defining the implemented views. This value will be used by
@@ -846,6 +857,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
 		self.CollectionPrivatePath = PrivatePath(identifier: identifier)!
 		self.AdministratorStoragePath = StoragePath(identifier: identifier.concat("Administrator"))!
 		self.ArtStoragePath = StoragePath(identifier: identifier.concat("ArtStorage"))!
+        self.PistisStoragePath = StoragePath(identifier: identifier.concat("Pistis"))!
+        self.PistisPublicPath = PublicPath(identifier: identifier.concat("Pistis"))!
 
 		// Create a Administrator resource and save it to Mneme account storage
 		let administrator <- create Administrator()
@@ -859,6 +872,12 @@ contract Mneme: NonFungibleToken, ViewResolver {
         // create a public capability for the collection
 	    let collectionCap = self.account.capabilities.storage.issue<&Mneme.Collection>(self.CollectionStoragePath)
 		self.account.capabilities.publish(collectionCap, at: self.CollectionPublicPath)
+		// Create a Pistis resource and save it to storage
+		let pistis <- create Pistis(colletor: self.account.address)
+		self.account.storage.save(<- pistis, to: self.PistisStoragePath)
+        // create a public capability for Pistis
+	    let pistisCap = self.account.capabilities.storage.issue<&Mneme.Pistis>(self.PistisStoragePath)
+		self.account.capabilities.publish(pistisCap, at: self.PistisPublicPath)
     }
 
 }
