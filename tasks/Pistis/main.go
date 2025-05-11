@@ -21,78 +21,16 @@ func main() {
 	color.Blue("Pistis Contract testing")
 
 	color.Green("User creates the ArtDrop project under the Art cateogry")
-	// Admin creates categories
-	o.Tx("Pistis/admin/create_category",
-		WithSigner("account"),
-		WithArg("categoryName", "Art"),
-	)
-	o.Tx("Pistis/admin/create_category",
-		WithSigner("account"),
-		WithArg("categoryName", "Music"),
-	)
-	o.Tx("Pistis/admin/create_category",
-		WithSigner("account"),
-		WithArg("categoryName", "Tourism"),
-	)
-	o.Tx("Pistis/admin/create_category",
-		WithSigner("account"),
-		WithArg("categoryName", "Literature"),
-	)
-	o.Tx("Pistis/admin/create_category",
-		WithSigner("account"),
-		WithArg("categoryName", "Restaurants"),
-	)
-	// Get all categories
-	o.Script("get_all_categories")
-	//
-	o.Tx("Pistis/admin/create_artist",
-		WithSigner("account"),
-		WithArg("name", "Beeple"),
-		WithArg("biography", "Born on Earth"),
-		WithArg("nationality", "human"),
-		WithArg("preferredMedium", "digital"),
-		WithArg("socials", `{"Twitter": "www.x.com/beeple"}`),
-		WithArg("representation", ""),
-		WithArg("accountAddress", "bob"),
-	)
-	o.Script("get_all_artists")
-	// Create a new Piece blueprint
-	color.Green("Admin creates a Piece resource")
-	o.Tx("Pistis/admin/create_piece_blueprint",
-		WithSigner("account"),
-		WithArg("name", "Bull Run"),
-		WithArg("description", "A bull with a BitCoin on its back"),
-		WithArg("artistName", "Beeple"),
-		WithArg("creationDate", "Spring 2019"),
-		WithArg("creationLocation", "Charleston, SC, USA"),
-		WithArg("artType", "Digital"),
-		WithArg("medium", "Photoshop"),
-		WithArg("subjectMatter", "Bitcoin"),
-		WithArg("provenanceNotes", ""),
-		WithArg("collection", "Everydays, the 2020 Collection!"),
-		WithArg("acquisitionDetails", "N/A"),
-	)
-	o.Script("get_all_pieces")
 
-	// Mint a Piece into Admin's account
-	o.Tx("Pistis/admin/mint_piece",
+	// Create a new pool
+	o.Tx("Pistis/create_pool",
 		WithSigner("account"),
-		WithArg("recipient", "account"),
+		WithArg("newPoolName", "Matina Hoffman"),
+		WithArg("category", "Art"),
+		WithArg("metadata", "{}"),
 	)
-
-	// Create a new Artist struct
-
-	/* 	o.Tx("Pistis/create_project",
-	   		WithSigner("account"),
-	   		WithArg("newProjectName", "Pistis"),
-	   	)
-	   	o.Script("Pistis/get_all_projects") */
-	// Create a new Piece blueprint
-
-	/* - User has to specify the following:
-	1. Define the name of the project and its description
-	2. The NFT collection used as proof of support metadata
-	3. The multipliers for the editions of these NFTs
-	4. The number of soul-tokens per account that participates in the project */
-
+	// Get all the pools by category
+	o.Script("Pistis/get_pools_by_category",
+		WithArg("category", "Art"),
+	)
 }
