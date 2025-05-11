@@ -20,10 +20,32 @@ func main() {
 
 	color.Blue("Pistis Contract testing")
 
-	color.Green("User creates a new project on the Pistis contract")
+	color.Green("User creates the ArtDrop project under the Art cateogry")
+	// Admin creates categories
+	o.Tx("Pistis/admin/create_category",
+		WithSigner("account"),
+		WithArg("categoryName", "Art"),
+	)
+	o.Tx("Pistis/admin/create_category",
+		WithSigner("account"),
+		WithArg("categoryName", "Music"),
+	)
+	o.Tx("Pistis/admin/create_category",
+		WithSigner("account"),
+		WithArg("categoryName", "Tourism"),
+	)
+	o.Tx("Pistis/admin/create_category",
+		WithSigner("account"),
+		WithArg("categoryName", "Literature"),
+	)
+	o.Tx("Pistis/admin/create_category",
+		WithSigner("account"),
+		WithArg("categoryName", "Restaurants"),
+	)
+	// Get all categories
+	o.Script("get_all_categories")
 	//
-	// Create a new Artist struct on the Mneme contract
-	o.Tx("Mneme/admin/create_artist",
+	o.Tx("Pistis/admin/create_artist",
 		WithSigner("account"),
 		WithArg("name", "Beeple"),
 		WithArg("biography", "Born on Earth"),
@@ -36,7 +58,7 @@ func main() {
 	o.Script("get_all_artists")
 	// Create a new Piece blueprint
 	color.Green("Admin creates a Piece resource")
-	o.Tx("Mneme/admin/create_piece_blueprint",
+	o.Tx("Pistis/admin/create_piece_blueprint",
 		WithSigner("account"),
 		WithArg("name", "Bull Run"),
 		WithArg("description", "A bull with a BitCoin on its back"),
@@ -53,7 +75,7 @@ func main() {
 	o.Script("get_all_pieces")
 
 	// Mint a Piece into Admin's account
-	o.Tx("Mneme/admin/mint_piece",
+	o.Tx("Pistis/admin/mint_piece",
 		WithSigner("account"),
 		WithArg("recipient", "account"),
 	)
@@ -62,7 +84,7 @@ func main() {
 
 	/* 	o.Tx("Pistis/create_project",
 	   		WithSigner("account"),
-	   		WithArg("newProjectName", "Mneme"),
+	   		WithArg("newProjectName", "Pistis"),
 	   	)
 	   	o.Script("Pistis/get_all_projects") */
 	// Create a new Piece blueprint

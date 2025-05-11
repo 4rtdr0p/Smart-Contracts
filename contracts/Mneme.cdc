@@ -20,6 +20,8 @@ import "FlowToken"
 import "NonFungibleToken"
 import "ViewResolver"
 import "MetadataViews"
+import "FindViews"
+
 
 access(all)
 contract Mneme: NonFungibleToken, ViewResolver {
@@ -436,7 +438,84 @@ contract Mneme: NonFungibleToken, ViewResolver {
         }
         
     }
-    /// The resource that represents a Mneme NFT
+    access(all) resource artistPool {
+        access(all) let artistName: String
+        access(all) let storagePath: StoragePath
+        access(all) let publicPath: PublicPath
+        access(all) let dateCreated: UFix64
+        access(all) let supporters: {Address: UFix64}
+
+        init(artistName: String) {
+            self.artistName = artistName
+            self.storagePath = StoragePath(identifier: "Mneme_".concat(artistName).concat("_community_pool"))!
+            self.publicPath = PublicPath(identifier: "Mneme_".concat(artistName).concat("_community_pool"))!
+            self.dateCreated = getCurrentBlock().timestamp
+            self.supporters = {}
+
+            let communityPool <- FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
+            Mneme.account.storage.save(<- communityPool, to: self.storagePath)
+            // Create a public capability to the stored Vault that only exposes
+            // the `deposit` method through the `Receiver` interface
+            let receiverCapability = Mneme.account.capabilities.storage.issue<&FlowToken.Vault>( self.storagePath)
+            Mneme.account.capabilities.publish(receiverCapability, at: self.publicPath)
+        }
+
+        access(all) fun addSupport(supporter: Address, amount: UFix64) { 
+            pre {
+                self.supporters[supporter]! + amount <= 100.0: "Support limit of 100.0 reached"
+            }
+            self.supporters[supporter] = self.supporters[supporter]! + amount
+
+            // emit event
+            // emit Support(artistName: self.artistName, supporter: supporter, amount: amount)
+        }
+        // calculate rewards
+        access(all) fun calculateRewards(collector: Address) {
+            pre {
+                self.supporters[collector] != nil: "Collector is not a supporter"
+            }
+
+            let editionsMultiplier = self.getTotalEditions(collector: collector) 
+            let supportMultiplier = self.supporters[collector]!
+            let totalMultiplier = editionsMultiplier + supportMultiplier
+            // get Artist's community pool
+            let vaultRef = Mneme.account.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: self.storagePath)!
+            // Get collector's vault
+            let collectorVault = getAccount(collector).capabilities.borrow<&{FungibleToken.Receiver}>(/public/flowTokenReceiver)!
+            // Deposit collector's tokens to the artist's pool
+            collectorVault.deposit(from: <- vaultRef.withdraw(amount: 0.0) )
+
+        }
+        // Get the total of editions owned
+        access(all) fun getTotalEditions(collector: Address): UFix64 {
+            // Get the owned Pieces from the collector
+            // Sum the total of pieces owned
+            // Sum their editions multipliers 
+            let account = getAccount(collector)
+            let cap = account.capabilities.borrow<&Mneme.Collection>(Mneme.CollectionPublicPath)!
+            let ids = cap.getIDs()
+            var multiplier = 0.0
+
+            for id in ids {
+                let nftRef = cap.borrowNFT(id)!
+                let resolver = cap.borrowViewResolver(id: id)!
+                let serialView = MetadataViews.getSerial(resolver)!
+                let edition = serialView as! UInt64
+
+                if edition == 1 {
+                    multiplier = multiplier + 5.0
+                } else if edition > 1 && edition <= 10 {
+                    multiplier = multiplier + 2.0
+                } else if edition > 10 {
+                    multiplier = multiplier + 1.0
+                }
+            }
+            return multiplier
+        }
+    }
+    // -----------------------------------------------------------------------
+    // NFT Resource
+    // -----------------------------------------------------------------------
 	access(all) resource NFT: NonFungibleToken.NFT {
         access(all) let id: UInt64
         access(all) let artistName: String
@@ -726,13 +805,10 @@ contract Mneme: NonFungibleToken, ViewResolver {
             pre {
                 Mneme.artists[artistName] == nil: "This artist already has a community pool"
             }
+            // This pool is either going to be on 30 days period or per season
+            // If it is per season, then it's tied to that season's NFTs
             let path = "Mneme_".concat(artistName).concat("_community_pool")
-            let communityPool <- FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
-            Mneme.account.storage.save(<- communityPool, to: StoragePath(identifier: path)!)
-            // Create a public capability to the stored Vault that only exposes
-            // the `deposit` method through the `Receiver` interface
-            let receiverCapability = Mneme.account.capabilities.storage.issue<&FlowToken.Vault>(StoragePath(identifier: path)!)
-            Mneme.account.capabilities.publish(receiverCapability, at: PublicPath(identifier: path)!)
+
             // Emit event
         }
     }
