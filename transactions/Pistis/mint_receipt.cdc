@@ -1,12 +1,12 @@
 import "Pistis"
-
+import "NonFungibleToken"
+import "MetadataViews"
+import "FlowToken"
+import "FungibleToken"
 // This transaction is for any user to create a new Project 
 // on the proof-of-support platform 
 
-transaction(
-    newPoolName: String,
-    category: String,
-) {
+transaction(newPoolName: String, receiptName: String,) {
 
     prepare(signer:auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue, UnpublishCapability) &Account) {
 

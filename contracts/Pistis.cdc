@@ -43,7 +43,7 @@ contract Pistis: NonFungibleToken, ViewResolver {
     access(all) var totalSupply: UInt64
     // Track of total amount of Projects on Pistis
     access(all) var totalPools: UInt64
-    // Track of total amount of MetadataStructs on Pistis
+    // Track of total amount of PoolStructs on Pistis
     access(all) var totalMetadatas: UInt64
     // -----------------------------------------------------------------------
     // Pistis contract Events
@@ -66,20 +66,20 @@ contract Pistis: NonFungibleToken, ViewResolver {
 	access(all) let CollectionPublicPath: PublicPath
     access(all) let PoolStoragePath: StoragePath
     access(all) let PoolPublicPath: PublicPath
-
+    access(all) let ReceiptCreatorStoragePath: StoragePath
     // -----------------------------------------------------------------------
     // Pistis contract-level Composite Type definitions
     // -----------------------------------------------------------------------
 
     access(all) resource interface PoolStoragePublic {
-        access(all) view fun getPools(): {String: MetadataStruct}
+        access(all) view fun getPools(): {String: PoolStruct}
         access(all) view fun getPoolsByCategory(category: String): [String]
     }
 
     // Resource used to store Pools metadatas
     access(all) resource PoolStorage: PoolStoragePublic {
-        // mapping of poolNames to their MetadataStructs
-        access(all) let pools: {String: MetadataStruct}
+        // mapping of poolNames to their PoolStructs
+        access(all) let pools: {String: PoolStruct}
         access(all) let categories: {String: [String]}
 
         init() {
@@ -102,7 +102,7 @@ contract Pistis: NonFungibleToken, ViewResolver {
             self.categories[categoryName] = []
         }
         // Add new Metadata to the Storage
-        access(all) fun addPool(poolName: String, newMetadata: MetadataStruct) {
+        access(all) fun addPool(poolName: String, newMetadata: PoolStruct) {
             pre {
                 self.pools[poolName] == nil: "There's already a pool on Pistis named: ".concat(poolName)
             }
@@ -123,8 +123,15 @@ contract Pistis: NonFungibleToken, ViewResolver {
             self.categories[newMetadata.category]!.append(poolName)
 
         }
-
-        access(all) view fun getPools(): {String: MetadataStruct} {
+        // Add a new receipt to the pool
+        access(all) fun addReceipt(poolName: String, receipt: ReceiptStruct) {
+            pre {
+                self.pools[poolName] != nil: "There's no pool on Pistis named: ".concat(poolName)
+            }
+            let pool = self.pools[poolName] as! PoolStruct
+            pool.addReceipt(proof: receipt)
+        }
+        access(all) view fun getPools(): {String: PoolStruct} {
             return self.pools
         }
 
@@ -148,27 +155,94 @@ contract Pistis: NonFungibleToken, ViewResolver {
     // Struct used to copy a Project's NFT metadata
     // and save it inside Pistis' storage
 
-    access(all) struct MetadataStruct {
+    access(all) struct PoolStruct {
         access(all) let id: UInt64
-        // Project to which this Metadata belongs to
-        access(all) let projectName: String  
+        // Creator to which this Pool belongs to
+        access(all) let creatorName: String     
+        access(all) let creatorAddress: Address
         access(all) let category: String
-        access(all) let metadata: {String: AnyStruct}
+        access(all) let collections: {UInt64: ReceiptStruct}
+        access(all) var totalSupply: UInt64
 
-        init(_ projectName: String, _ category: String, _ metadata: {String: AnyStruct}) {
+        init(_ creatorName: String, _ creatorAddress: Address, _ category: String) {
 /*             pre {
                 Pistis.projects[projectName] != nil: "There's no project on Pistis named: ".concat(projectName)
             } */
-            self.projectName = projectName
+            self.creatorName = creatorName
+            self.creatorAddress = creatorAddress
             self.category = category
+            self.collections = {}
+            // Increment the global Metadatas IDs
+            Pistis.totalMetadatas = Pistis.totalMetadatas + 1
+            self.id = Pistis.totalMetadatas
+            self.totalSupply = 0
+        }
+        // Add Receipt
+        access(all) fun addReceipt(proof: ReceiptStruct) {
+            self.totalSupply = self.totalSupply + 1
+            self.collections[self.totalSupply] = proof
+        }
+    }
+
+    // Struct used for the collections of a Pool
+    access(all) struct ReceiptStruct {
+        access(all) let id: UInt64
+        access(all) let poolName: String
+        access(all) let name: String
+        access(all) let description: String
+        access(all) let image: String
+        access(all) let metadata: {String: AnyStruct}
+        access(all) let multiplier: MultiplierStruct
+        access(all) var minted: UInt64
+        init(_ poolName: String, _ name: String, _ description: String, _ image: String, _ metadata: {String: AnyStruct}, _ multiplier: MultiplierStruct) {     
+            self.poolName = poolName
+            self.name = name
+            self.description = description
+            self.image = image
             self.metadata = metadata
             // Increment the global Metadatas IDs
             Pistis.totalMetadatas = Pistis.totalMetadatas + 1
             self.id = Pistis.totalMetadatas
+            self.multiplier = multiplier
+            self.minted = 0
+        }
+
+        access(all) fun updateMinted() {
+            self.minted = self.minted + 1
+        }
+    }
+    // Struct used for multiplier system
+    access(all) struct MultiplierStruct {
+        access(all) let poolName: String
+
+        access(all) let earlyAdopter: {UInt64: UFix64}
+        access(all) let stakingWeight: {UInt64: UFix64}
+        access(all) let loyaltyWeight: {UInt64: UFix64}
+
+        init(_ poolName: String, _ earlyAdopter: {UInt64: UFix64}, _ stakingWeight: {UInt64: UFix64}, _ loyaltyWeight: {UInt64: UFix64}) {  
+            self.poolName = poolName
+            self.earlyAdopter = earlyAdopter
+            self.stakingWeight = stakingWeight
+            self.loyaltyWeight = loyaltyWeight
         }
     }
 
-    /// The resource that represents a VenezulaNFT
+    // Pool creator resource
+    access(all) resource ReceiptCreator {
+        access(self) let poolName: String
+        
+        init(_ poolName: String) {
+            self.poolName = poolName
+        }
+
+        access(all) fun createReceipt(receipt: ReceiptStruct) {
+            // fetch the pool from storage
+            let pool = Pistis.account.storage.borrow<&Pistis.PoolStorage>(from: Pistis.PoolStoragePath)!
+            pool.addReceipt(poolName: self.poolName, receipt: receipt)
+        }
+    }
+
+    /// The resource that represents a Pistis NFT
 	access(all) resource NFT: NonFungibleToken.NFT {
         access(all) let id: UInt64
         access(all) let metadata: AnyStruct
@@ -340,14 +414,17 @@ contract Pistis: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     
     // Function to create a new Project
-    access(all) fun createPool(poolName: String, metadataStruct: MetadataStruct) {
+    access(all) fun createPool(poolName: String, PoolStruct: PoolStruct): @Pistis.ReceiptCreator {
         pre {
             Pistis.pools[poolName] == nil: "There's already a project on Pistis named: ".concat(poolName)
         }
-        //Pistis.pools[projectName] = MetadataStruct(projectName, nftType, nftCap)  
+        //Pistis.pools[projectName] = PoolStruct(projectName, nftType, nftCap)  
         let storage = Pistis.account.storage.borrow<&Pistis.PoolStorage>(from: Pistis.PoolStoragePath)!
 
-        let poolID = storage.addPool(poolName: poolName, newMetadata: metadataStruct)
+        let poolID = storage.addPool(poolName: poolName, newMetadata: PoolStruct)
+        let receiptCreator <- create ReceiptCreator(poolName)
+
+        return <- receiptCreator
     }
 
     /// createEmptyCollection creates an empty Collection for the specified NFT type
@@ -366,7 +443,7 @@ contract Pistis: NonFungibleToken, ViewResolver {
 	}
 
     // Function to get all the projects on Pistis
-    access(all) fun getPools(): {String: Pistis.MetadataStruct} {
+    access(all) fun getPools(): {String: Pistis.PoolStruct} {
         let storage = Pistis.account.capabilities.borrow<&{Pistis.PoolStoragePublic}>(Pistis.PoolPublicPath)!
         return storage.getPools()
     }
@@ -377,7 +454,7 @@ contract Pistis: NonFungibleToken, ViewResolver {
         return pools
     }
     // Function to get all the projects on Pistis
-/*     access(all) fun getPoolMetadata(poolName: String): Pistis.MetadataStruct {
+/*     access(all) fun getPoolMetadata(poolName: String): Pistis.PoolStruct {
         let pool = self.pools[poolName]!
 
         return pool
@@ -437,7 +514,7 @@ contract Pistis: NonFungibleToken, ViewResolver {
 		self.CollectionPublicPath = PublicPath(identifier: identifier)!
         self.PoolStoragePath = StoragePath(identifier: identifier.concat("_poolStorage"))!
         self.PoolPublicPath = PublicPath(identifier: identifier.concat("_poolStoragePublic"))!
-
+        self.ReceiptCreatorStoragePath = StoragePath(identifier: identifier.concat("_receiptCreator"))!
         // Create a Collection resource and save it to storage
 		let collection <- create Collection()
 		self.account.storage.save(<- collection, to: self.CollectionStoragePath)
