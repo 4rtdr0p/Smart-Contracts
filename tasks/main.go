@@ -48,7 +48,7 @@ func main() {
 	color.Green("Admin creates a Piece resource")
 	o.Tx("mneme/admin/create_piece_blueprint",
 		WithSigner("account"),
-		WithArg("name", "Bull Run"),
+		WithArg("title", "Bull Run"),
 		WithArg("description", "A bull with a BitCoin on its back"),
 		WithArg("artistName", "Beeple"),
 		WithArg("creationDate", "Spring 2019"),
@@ -83,18 +83,6 @@ func main() {
 	)
 	// Check the artist's pool
 	o.Script("get_artist_pool",
-		WithArg("artistName", "Beeple"),
-	)
-	// Collector must opt-in to the artist's pool
-	// and stake their soulbound tokens
-	o.Tx("mneme/collector/stake_soultokens",
-		WithSigner("bob"),
-		WithArg("artistName", "Beeple"),
-		WithArg("amount", "50.0"),
-	)
-	// Collector should be able to claim rewards from the artist's pool
-	o.Tx("mneme/collector/claim_rewards",
-		WithSigner("collector"),
 		WithArg("artistName", "Beeple"),
 	)
 

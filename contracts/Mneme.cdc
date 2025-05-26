@@ -51,7 +51,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
 	access(all) event Deposit(id: UInt64, to: Address?)
     access(all) event PistisCreated(id: UInt64, accountAddress: Address)
     access(all) event ArtistCreated(id: UInt64, name: String, accountAddress: Address)
-    access(all) event PieceCreated(id: UInt64, name: String, artist: String)
+    access(all) event PieceCreated(id: UInt64, title: String, artist: String)
     access(all) event ViewsUpdated(pieceName: String, oldViewsCount: Int64, newViewsCount: Int64)
 
     // -----------------------------------------------------------------------
@@ -107,7 +107,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         }
         // Function to add a Piece to the storage
         access(all) fun addPiece(newPiece: Piece) {
-            self.pieces[newPiece.name] = newPiece
+            self.pieces[newPiece.title] = newPiece
         }
         // Function to update a Piece's sentiment
         access(all)
@@ -168,10 +168,10 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // The Piece struct represents the Art's metadata
     // it serves as a blueprint from which NFTs can be minted
     access(all) struct Piece {
-        // Piece's unique id
+        // Piece's unique id 
         access(all) let id: UInt64
         // Piece's name
-        access(all) let name: String
+        access(all) let title: String
         // Art's artist's name
         access(all) let artistName: String
         // Art's description
@@ -201,9 +201,11 @@ contract Mneme: NonFungibleToken, ViewResolver {
         access(all) let sentimentTrack: Sentiment
         // Price of the Piece
         access(all) let price: UFix64
+        // Piece's image
+        access(all) let image: String
 
         init(
-            _ name: String,
+            _ title: String,
             _ description: String,
             _ artistName: String,
             _ artistAccount: Address,
@@ -215,13 +217,14 @@ contract Mneme: NonFungibleToken, ViewResolver {
             _ provenanceNotes: String,
             _ acquisitionDetails: String?,
             _ productionDetails: ProductionDetails,
-            _ price: UFix64
+            _ price: UFix64,
+            _ image: String
         ) {
             // Increase the total of Pieces supply
             Mneme.totalPieces = Mneme.totalPieces + 1
 
             self.id = Mneme.totalPieces  
-            self.name = name
+            self.title = title
             self.description = description
             self.artistName = artistName
             self.artistAccount = artistAccount
@@ -236,6 +239,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.collections = []
             self.sentimentTrack = Sentiment()
             self.price = price
+            self.image = image
         }
         // Functionality around a Piece's blueprint
         access(all)
@@ -255,7 +259,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             let oldCount = sentiment.views
             sentiment.updateSentiment(newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
 
-            emit ViewsUpdated(pieceName: self.name, oldViewsCount: oldCount, newViewsCount: sentiment.views)
+            emit ViewsUpdated(pieceName: self.title, oldViewsCount: oldCount, newViewsCount: sentiment.views)
         }
     }
 
@@ -279,7 +283,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         access(all) let mounting: String
         access(all) let packing: String
         access(all) let artistSignature: String
-        access(all) let certificateOfAuth: String
+        access(all) let statementOfAuth: String?
         access(all) let numbering: String
         access(all) let status: String
         access(all) let otherFinishings: String
@@ -302,7 +306,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             _ mounting: String,
             _ packing: String,
             _ artistSignature: String,
-            _ certificateOfAuth: String,
+            _ statementOfAuth: String?,
             _ numbering: String,
             _ status: String,
             _ otherFinishings: String
@@ -324,7 +328,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.mounting = mounting
             self.packing = packing
             self.artistSignature = artistSignature
-            self.certificateOfAuth = certificateOfAuth
+            self.statementOfAuth = statementOfAuth
             self.numbering = numbering
             self.status = status
             self.otherFinishings = otherFinishings
@@ -725,7 +729,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         // Returns: the ID of the new Piece object
         //
         access(all) fun createPiece(
-            name: String,
+            title: String,
             description: String,
             artistName: String,
             artistAccount: Address,
@@ -737,14 +741,15 @@ contract Mneme: NonFungibleToken, ViewResolver {
             provenanceNotes: String,
             acquisitionDetails: String?,
             productionDetails: ProductionDetails,
-            price: UFix64
+            price: UFix64,
+            image: String
         ): UInt64 {
             // Create new Piece resource
-            let newPiece = Piece(name, description, artistName, artistAccount, creationDate, creationLocation, artType, medium, subjectMatter, provenanceNotes, acquisitionDetails, productionDetails, price)
+            let newPiece = Piece(title, description, artistName, artistAccount, creationDate, creationLocation, artType, medium, subjectMatter, provenanceNotes, acquisitionDetails, productionDetails, price, image)
             // store the new id 
             let newID = newPiece.id
             // emit event
-            emit PieceCreated(id: newPiece.id, name: newPiece.name, artist: newPiece.artistName)
+            emit PieceCreated(id: newPiece.id, title: newPiece.title, artist: newPiece.artistName)
             // borrow ArtStorage from Account
             let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
             // Store the new resource inside the smart contract
@@ -775,7 +780,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             pre {
                 Mneme.artists[artistName] != nil: "This artist does not exist"
             }
-            let piecePrice = Mneme.getPiecePrice(pieceName)
+/*             let piecePrice = Mneme.getPiecePrice(pieceName)
             let artistRoyalties = Mneme.artists[artistName]!.communityRoyalties
             let royalties = piecePrice * artistRoyalties
             // Get a reference to Mneme's stored vault
@@ -783,7 +788,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             let path = PublicPath(identifier: "Mneme_".concat(artistName).concat("_community_pool"))!
             // Get contract's Vault
 		    let artistTreasury = getAccount(Mneme.account.address).capabilities.borrow<&{FungibleToken.Receiver}>(path)!
-            artistTreasury.deposit(from: <- vaultRef.withdraw(amount: royalties))
+            artistTreasury.deposit(from: <- vaultRef.withdraw(amount: royalties)) */
             // Mint the NFT
             let nft <- create NFT(artistName: pieceName)
 
@@ -808,6 +813,12 @@ contract Mneme: NonFungibleToken, ViewResolver {
             // This pool is either going to be on 30 days period or per season
             // If it is per season, then it's tied to that season's NFTs
             let path = "Mneme_".concat(artistName).concat("_community_pool")
+            let pool <-  FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
+            // Save the pool to storage
+            Mneme.account.storage.save(<- pool, to: StoragePath(identifier: path)!)
+            // Create a public capability to the Vault that exposes the Vault interfaces
+            let vaultCap = Mneme.account.capabilities.storage.issue<&{FungibleToken.Vault}>(StoragePath(identifier: path)!)
+            Mneme.account.capabilities.publish(vaultCap, at: PublicPath(identifier: path)!)
 
             // Emit event
         }
