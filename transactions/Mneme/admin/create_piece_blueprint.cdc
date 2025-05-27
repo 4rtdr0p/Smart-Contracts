@@ -15,7 +15,8 @@ transaction(
     provenanceNotes: String,
     collection: String?,
     acquisitionDetails: String?,
-    price: UFix64
+    price: UFix64,
+    encodedImg: String,
     ) {
 
     let Administrator: &Mneme.Administrator
@@ -63,6 +64,7 @@ transaction(
             provenanceNotes: provenanceNotes,
             acquisitionDetails: acquisitionDetails,
             productionDetails: self.productionDetails,
-            price: price)
+            price: price,
+            image: encodedImg)
     }
 }
