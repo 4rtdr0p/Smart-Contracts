@@ -20,7 +20,6 @@ import "FlowToken"
 import "NonFungibleToken"
 import "ViewResolver"
 import "MetadataViews"
-import "FindViews"
 
 
 access(all)
@@ -591,7 +590,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
 						name: self.pieceTitle,
 						description: metadata.description,
 						thumbnail: MetadataViews.HTTPFile( 
-            				url: "https://bafybeiceaod6tlnx36curr5fheppn43yuum42iuqodwnd4ve3hfsncagly.ipfs.dweb.link?filename=u8583739436_Create_a_logo_with_the_letter_V._This_illustrated_608e624a-bc77-4ad8-b2bd-ebda78890729_0.png"
+            				url: "data:image/png;base64,".concat(metadata.image)
             			)
 					)
 				case Type<MetadataViews.Traits>():
@@ -610,7 +609,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
 				case Type<MetadataViews.NFTCollectionData>():
 					return Mneme.resolveContractView(resourceType: Type<@Mneme.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
         		case Type<MetadataViews.ExternalURL>():
-        			return Mneme.getCollectionAttribute(key: "website") as! MetadataViews.ExternalURL
+        			return "https://www.artdrop.me"
 		        case Type<MetadataViews.NFTCollectionDisplay>():
 					return Mneme.resolveContractView(resourceType: Type<@Mneme.NFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
 				case Type<MetadataViews.Medias>():
@@ -943,15 +942,20 @@ contract Mneme: NonFungibleToken, ViewResolver {
                 )
                 return collectionData
             case Type<MetadataViews.NFTCollectionDisplay>():
-                let media = Mneme.getCollectionAttribute(key: "image") as! MetadataViews.Media
+                let media = MetadataViews.Media(
+            			file: MetadataViews.HTTPFile(
+            				url: "https://artdrop.me/cdn/shop/files/logo-white.png"
+            			),
+            			mediaType: "image/jpeg"
+          			)
                 return MetadataViews.NFTCollectionDisplay(
-                    name: "Mneme",
-                    description: "Mnemes and Telegram governance.",
-                    externalURL: MetadataViews.ExternalURL("https://Mneme.gg/"),
+                    name: "ArtDrop",
+                    description: "ArtDrop is Forever.",
+                    externalURL: MetadataViews.ExternalURL("https://ArtDrop.me/"),
                     squareImage: media,
                     bannerImage: media,
                     socials: {
-                        "twitter": MetadataViews.ExternalURL("https://twitter.com/Mneme")
+                        "twitter": MetadataViews.ExternalURL("https://X.com/Artdrop")
                     }
                 )
         }
