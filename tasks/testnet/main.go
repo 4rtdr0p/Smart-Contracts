@@ -24,14 +24,14 @@ func main() {
 
 	// Create a new Artist struct
 	o.Tx("admin/create_artist",
-		WithSigner("Mneme"),
+		WithSigner("account"),
 		WithArg("name", "Beeple"),
 		WithArg("biography", "Born on Earth"),
 		WithArg("nationality", "human"),
 		WithArg("preferredMedium", "digital"),
 		WithArg("socials", `{"Twitter": "www.x.com/beeple"}`),
 		WithArg("representation", ""),
-		WithArg("accountAddress", "Mneme"),
+		WithArg("accountAddress", "account"),
 	).Print()
 	o.Script("get_all_artists").Print()
 	// Create a new Piece blueprint

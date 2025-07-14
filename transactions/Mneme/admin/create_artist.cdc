@@ -1,4 +1,4 @@
-import "Mneme"
+import "Mneme" 
 
 // This transaction is for the admin to create a new artist struct
 // and store it in the Mneme smart contract
