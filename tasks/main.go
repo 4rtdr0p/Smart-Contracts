@@ -84,19 +84,22 @@ func main() {
 	)
 
 	// Mint a Piece into bob's account
-	/* 	o.Tx("Mneme/admin/mint_piece",
-	   		WithSigner("account"),
-	   		WithArg("pieceName", "Sunflowers"),
-	   		WithArg("artistName", "John Doe"),
-	   		WithArg("recipient", "account"),
-	   	)
-	   	// Check the artist's pool
-	   	o.Script("get_artist_pool",
-	   		WithArg("artistName", "Martin"),
-	   	)
+	o.Tx("Mneme/admin/mint_piece",
+		WithSigner("account"),
+		WithArg("pieceName", "Sunflowers"),
+		WithArg("artistName", "John Doe"),
+		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
+		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
+		WithArg("piecePrice", "844.0"),
+		WithArg("recipient", "account"),
+	)
+	// Check the artist's pool
+	o.Script("get_artist_pool",
+		WithArg("artistName", "John Doe"),
+	)
 
-	   	o.Script("get_owned_nfts",
-	   		WithArg("account", "Mneme"),
-	   	) */
+	/* 	   	o.Script("get_owned_nfts",
+		WithArg("account", "Mneme"),
+	) */
 
 }

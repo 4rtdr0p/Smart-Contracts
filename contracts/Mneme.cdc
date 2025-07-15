@@ -49,6 +49,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
     access(all) entitlement AddCertificate
     access(all) entitlement UpdateOwner
     access(all) entitlement UpdateSentiment
+    access(all) entitlement MintPiece
     // -----------------------------------------------------------------------
     // Mneme contract Events
     // ----------------------------------------------------------------------- 
@@ -1019,15 +1020,18 @@ contract Mneme: NonFungibleToken, ViewResolver {
             storage.updateSentiment(pieceID, artistName, newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
         } 
         // Mint Piece NFT
-         /* access(all) fun mintPiece(
+         access(MintPiece) fun mintPiece(
             pieceName: String,
             artistName: String,
+            piecePrice: UFix64,
+            description: String,
+            image: String,
             recipient: Address) {
             pre {
                 Mneme.artists[artistName] != nil: "This artist does not exist"
             }
-             let piecePrice = Mneme.getPiecePrice(pieceName)
-            let artistRoyalties = Mneme.artists[artistName]!.communityRoyalties
+
+            let artistRoyalties = Mneme.getArtistRoyalties(name: artistName)!
             let royalties = piecePrice * artistRoyalties
             // Get a reference to Mneme's stored vault
             let vaultRef = Mneme.account.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)!
@@ -1036,7 +1040,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
 		    let artistTreasury = getAccount(Mneme.account.address).capabilities.borrow<&{FungibleToken.Receiver}>(path)!
             artistTreasury.deposit(from: <- vaultRef.withdraw(amount: royalties)) 
             // Mint the NFT
-            let nft <- create NFT(pieceTitle: pieceName)
+            let nft <- create NFT(pieceTitle: pieceName, artistName: artistName, description: description, image: image)
 
 			if let recipientCollection = getAccount(recipient)
 				.capabilities.borrow<&{NonFungibleToken.Receiver}>(Mneme.CollectionPublicPath) 
@@ -1044,13 +1048,13 @@ contract Mneme: NonFungibleToken, ViewResolver {
 					recipientCollection.deposit(token: <- nft)
 			} else {
 				destroy nft
- 				if let storage = &Piece.nftStorage[recipient] as &{UInt64: NFT}? {
+/*  				if let storage = &Piece.nftStorage[recipient] as &{UInt64: NFT}? {
 					storage[nft.id] <-! nft
 				} else {
 					Piece.nftStorage[recipient] <-! {nft.id: <- nft}
-				} 
+				}  */
 			}
-        }  */
+        }  
         // Helper function to create the community pool
           access(self) fun createCommunityPool(artistName: String) {
             pre {
