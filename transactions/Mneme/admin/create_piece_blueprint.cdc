@@ -1,6 +1,6 @@
 import "Mneme"
 
-// This transaction is for the admin to create a new artist struct
+// This transaction is for the admin to create a new Piece resource
 // and store it in the Mneme smart contract
 
 transaction(
@@ -25,7 +25,7 @@ transaction(
 
     prepare(admin: auth(BorrowValue) &Account) {
         self.Administrator = admin.storage.borrow<&Mneme.Administrator>(from: Mneme.AdministratorStoragePath)!
-        self.artistAccount = Mneme.getArtist(name: artistName)?.accountAddress ?? panic("No artist found by this name: ".concat(artistName))
+        self.artistAccount = Mneme.getArtistAccountAddress(name: artistName)
 
         self.productionDetails = Mneme.ProductionDetails(
             "Near Mint",
@@ -51,7 +51,7 @@ transaction(
             )
     }
     execute {
-        let newCardID = self.Administrator.createPiece(
+        let newPieceID = self.Administrator.createPiece(
             title: title,
             description: description,
             artistName: artistName,

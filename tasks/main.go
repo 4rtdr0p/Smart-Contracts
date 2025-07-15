@@ -47,7 +47,7 @@ func main() {
 	// Create a new Piece blueprint
 	color.Green("Admin creates a Piece resource")
 	o.Tx("Mneme/admin/create_piece_blueprint",
-		WithSigner("bob"),
+		WithSigner("account"),
 		WithArg("title", "Sunflowers"),
 		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
 		WithArg("artistName", "John Doe"),

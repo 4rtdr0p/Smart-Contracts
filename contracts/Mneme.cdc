@@ -118,6 +118,15 @@ contract Mneme: NonFungibleToken, ViewResolver {
             let metadata = artist?.resolveView(Type<MetadataViews.Traits>()) as! MetadataViews.Traits?
             return metadata
         }
+        // Function to get an Artist's account address
+        access(all) fun getArtistAccountAddress(name: String): Address {
+            pre {
+                self.artists[name] != nil: "There's no Artist by the name: \(name)"
+            }
+            let artist = &self.artists[name] as &Artist?
+            let accountAddress = artist?.getAccountAddress()!
+            return accountAddress
+        }
         // Function to get an Artist's community pool
         access(all) fun getArtistRoyalties(name: String): UFix64? {
             pre {
@@ -211,6 +220,10 @@ contract Mneme: NonFungibleToken, ViewResolver {
 
         access(all) fun addExtra(key: String, value: AnyStruct) {
             self.extra[key] = value
+        }
+        // Function to get an artist's account address
+        access(all) view fun getAccountAddress(): Address {
+            return self.accountAddress
         }
 
         access(self) view fun getTraits(): {String: AnyStruct} {
@@ -869,7 +882,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             // borrow ArtStorage from Account
             let storage = Mneme.account.storage.borrow<auth(AddArtist) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
             // Create the community pool
-            //self.createCommunityPool(artistName: name)
+            self.createCommunityPool(artistName: name)
             // Create new Artist struct
             let newArtist <- create Artist(name, biography, nationality, preferredMedium, socials, representation, accountAddress, communityRoyalties, image)
 
@@ -886,7 +899,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         //
         // Returns: the ID of the new Piece object
         //
-       /*  access(all) fun createPiece(
+        access(all) fun createPiece(
             title: String,
             description: String,
             artistName: String,
@@ -913,7 +926,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             storage.addPiece(newPiece: newPiece)
 
             return newID
-        } */
+        } 
         // updateViews and other functions update the
         // sentiment track for a particular piece
         /* access(all)
@@ -961,7 +974,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
 			}
         }  */
         // Helper function to create the community pool
-         /* access(self) fun createCommunityPool(artistName: String) {
+          access(self) fun createCommunityPool(artistName: String) {
             pre {
                 Mneme.artists[artistName] == nil: "This artist already has a community pool"
             }
@@ -976,7 +989,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             Mneme.account.capabilities.publish(vaultCap, at: PublicPath(identifier: path)!)
 
             // Emit event
-        } */
+        } 
     } 
     //
     // -----------------------------------------------------------------------
@@ -1003,6 +1016,15 @@ contract Mneme: NonFungibleToken, ViewResolver {
         let artist = storage.getArtist(name: name)
         return artist
     }
+    // Get Artist account address
+    access(all) fun getArtistAccountAddress(name: String): Address {
+        pre {
+            Mneme.artists[name] != nil: "This artist does not exist"
+        }
+        let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+        let accountAddress = storage.getArtistAccountAddress(name: name)
+        return accountAddress
+    }
     // Get Artist royalties
     access(all) fun getArtistRoyalties(name: String): UFix64? {
         pre {
@@ -1013,7 +1035,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         return royalties
     }
     // Public function to get an Artist's community pool
-/*     access(all) fun getArtistCommunityPool(artistName: String): UFix64 {
+    access(all) fun getArtistCommunityPool(artistName: String): UFix64 {
         pre {
             Mneme.artists[artistName] != nil: "This artist does not exist"
         }
@@ -1021,7 +1043,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         let path = PublicPath(identifier: "Mneme_\(artistName)_community_pool")!
 		let artistTreasury = getAccount(Mneme.account.address).capabilities.borrow<&{FungibleToken.Balance}>(path)!
         return artistTreasury.balance
-    } */
+    }
     // public function to get a dictionary of all artists
     access(all) view fun getAllPieces(): {String: Mneme.Piece} {
         // Borrow public capability for the art storage
