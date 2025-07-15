@@ -11,12 +11,13 @@ transaction(
     socials: {String: String},
     representation: String?,
     accountAddress: Address,
-    communityRoyalties: UFix64) {
+    communityRoyalties: UFix64,
+    image: String) {
 
-    let Administrator: &Mneme.Administrator
+    let Administrator: auth(Mneme.AddArtist) &Mneme.Administrator 
 
     prepare(admin: auth(BorrowValue) &Account) {
-        self.Administrator = admin.storage.borrow<&Mneme.Administrator>(from: Mneme.AdministratorStoragePath)!
+        self.Administrator = admin.storage.borrow<auth(Mneme.AddArtist) &Mneme.Administrator>(from: Mneme.AdministratorStoragePath)!
     }
     execute {
         let newCardID = self.Administrator.createArtist(
@@ -27,6 +28,7 @@ transaction(
             socials: socials,
             representation: representation,
             accountAddress: accountAddress,
-            communityRoyalties: communityRoyalties)
+            communityRoyalties: communityRoyalties,
+            image: image)
     }
 }

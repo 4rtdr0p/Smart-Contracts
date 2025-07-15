@@ -1,6 +1,6 @@
 import "Mneme"
 
 access(all)
-fun main(): {String: Mneme.Artist} {
+fun main(): &{String: Mneme.Artist} {
   return Mneme.getArtists()
 }

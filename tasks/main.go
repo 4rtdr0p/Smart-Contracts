@@ -33,12 +33,20 @@ func main() {
 		WithArg("representation", "N/A"),
 		WithArg("accountAddress", "0x12ecc177508efad8"),
 		WithArg("communityRoyalties", "0.0"),
-	).Print()
-	o.Script("get_all_artists").Print()
-	// get that artist's community pool
-	o.Script("get_artist_pool",
+		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
+	)
+	o.Script("get_artist",
+		WithArg("name", "John Doe"),
+	)
+	/* 	o.Tx("Mneme/testArtistEnt",
+		WithSigner("bob"),
 		WithArg("artistName", "John Doe"),
-	).Print()
+	) */
+	/* 	o.Script("get_all_artists")
+	   	// get that artist's community pool
+	   	o.Script("get_artist_pool",
+	   		WithArg("artistName", "John Doe"),
+	   	) */
 
 	// Create a new Piece blueprint
 	color.Green("Admin creates a Piece resource")
@@ -57,35 +65,35 @@ func main() {
 		WithArg("acquisitionDetails", "N/A"),
 		WithArg("price", "844.0"),
 		WithArg("encodedImg", "https://www.johndoe.com/images/sunflowers.jpg"),
-	).Print()
+	)
 	// mint
-	/* 	o.Script("get_all_pieces").Print() */
+	o.Script("get_all_pieces")
 	// Update a Piece's blueprint with sentiment feedback
-	/* 	o.Tx("mneme/admin/update_piece_sentiments",
+	o.Tx("mneme/admin/update_piece_sentiments",
 		WithSigner("Mneme"),
 		WithArg("pieceName", "Tree of Knowledge"),
 		WithArg("newViewsCount", 100),
 		WithArg("newLikesCount", 100),
 		WithArg("newSharesCount", 100),
 		WithArg("newPurchasesCount", 100),
-	).Print() */
+	)
 	// Get a Piece's views
-	/* 	o.Script("get_all_pieces").Print() */
+	o.Script("get_all_pieces")
 
 	// Mint a Piece into bob's account
-	/* 	o.Tx("Mneme/admin/mint_piece",
+	o.Tx("Mneme/admin/mint_piece",
 		WithSigner("account"),
 		WithArg("pieceName", "Sunflowers"),
 		WithArg("artistName", "John Doe"),
 		WithArg("recipient", "account"),
-	).Print() */
+	)
 	// Check the artist's pool
-	/* 	o.Script("get_artist_pool",
+	o.Script("get_artist_pool",
 		WithArg("artistName", "Martin"),
-	) */
+	)
 
-	/* 	o.Script("get_owned_nfts",
+	o.Script("get_owned_nfts",
 		WithArg("account", "Mneme"),
-	) */
+	)
 
 }

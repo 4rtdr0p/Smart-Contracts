@@ -24,7 +24,7 @@ import "FlowToken"
 import "NonFungibleToken"
 import "ViewResolver"
 import "MetadataViews" 
-import "FindViews"
+// import "FindViews"
 
 access(all) 
 contract Pistis: NonFungibleToken, ViewResolver {
