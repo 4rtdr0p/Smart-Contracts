@@ -20,7 +20,7 @@ func main() {
 
 	color.Blue("Mneme Contract testing")
 
-	color.Green("Admin creates an Artist struct")
+	color.Green("Admin creates an Artist resource")
 
 	// Create a new Artist struct
 	o.Tx("Mneme/admin/create_artist",
@@ -98,8 +98,8 @@ func main() {
 		WithArg("artistName", "John Doe"),
 	)
 
-	/* 	   	o.Script("get_owned_nfts",
+	o.Script("get_owned_nfts",
 		WithArg("account", "Mneme"),
-	) */
+	)
 
 }

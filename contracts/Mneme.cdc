@@ -31,7 +31,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // Dictionary to hold general collection information
     access(self) let collectionInfo: {String: AnyStruct}  
     // Dictionary to map artists by name to their id
-    access(self) let artists:  {String: UInt64}
+    access(self) let artists:  {UInt64: String}
     // Dictionary to map Piece by name to their metadata
     access(self) let pieces: {String: UInt64}
 
@@ -760,9 +760,10 @@ contract Mneme: NonFungibleToken, ViewResolver {
         access(all) let pieceTitle: String
         access(all) let description: String
         access(all) let artistName: String
+        access(all) let artistID: UInt64
         access(all) let image: String
 
-        init(pieceTitle: String, artistName: String, description: String, image: String) {
+        init(pieceTitle: String, artistName: String, artistID: UInt64, description: String, image: String) {
             // Increment the global Cards IDs
             Mneme.totalSupply = Mneme.totalSupply + 1
             self.id = Mneme.totalSupply
@@ -770,6 +771,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.artistName = artistName
             self.description = description
             self.image = image
+            self.artistID = artistID
         }
 
         access(all) fun getMetadata(): MetadataViews.Traits? {
@@ -844,7 +846,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
 						)
 					}
         		case Type<MetadataViews.Royalties>():
-                    let royalties = Mneme.getArtistRoyalties(name: self.artistName)!
+                    let royalties = Mneme.getArtistRoyalties(id: self.artistID)!
           			return MetadataViews.Royalties([
             			MetadataViews.Royalty(
               				receiver: getAccount(Mneme.account.address).capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver),
@@ -955,21 +957,21 @@ contract Mneme: NonFungibleToken, ViewResolver {
             accountAddress: Address,
             communityRoyalties: UFix64,
             image: String): UInt64 {
-            pre {
-                Mneme.artists[name] == nil: "This artist already exists"
+         pre {
+                Mneme.artists.values.contains(name) == false: "There's already an artist with this name"
             }
             // borrow ArtStorage from Account
             let storage = Mneme.account.storage.borrow<auth(AddArtist) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
-            // Create the community pool
-            self.createCommunityPool(artistName: name)
             // Create new Artist struct
             let newArtist <- create Artist(name, biography, nationality, preferredMedium, socials, representation, accountAddress, communityRoyalties, image)
-
+            // Get the new ID
             let newID = newArtist.id
             // Save artist to the dictionary stored inside the smart contract
             storage.addArtist(newArtist: <- newArtist)
+            // Create the community pool
+            self.createCommunityPool(artistID: newID)
             // Save artist to the dictionary stored inside the smart contract
-            Mneme.artists[name] = newID
+            Mneme.artists[newID] = name
 
             return newID
         }
@@ -1022,25 +1024,25 @@ contract Mneme: NonFungibleToken, ViewResolver {
         // Mint Piece NFT
          access(MintPiece) fun mintPiece(
             pieceName: String,
-            artistName: String,
+            artistID: UInt64,
             piecePrice: UFix64,
             description: String,
             image: String,
             recipient: Address) {
             pre {
-                Mneme.artists[artistName] != nil: "This artist does not exist"
+                Mneme.artists[artistID] != nil: "This artist does not exist"
             }
-
-            let artistRoyalties = Mneme.getArtistRoyalties(name: artistName)!
+            let artistName = Mneme.artists[artistID]!
+            let artistRoyalties = Mneme.getArtistRoyalties(id: artistID)!
             let royalties = piecePrice * artistRoyalties
             // Get a reference to Mneme's stored vault
             let vaultRef = Mneme.account.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)!
-            let path = PublicPath(identifier: "Mneme_\(artistName)_community_pool")!
+            let path = PublicPath(identifier: "Mneme_artist_\(artistID)_community_pool")!
             // Get contract's Vault
 		    let artistTreasury = getAccount(Mneme.account.address).capabilities.borrow<&{FungibleToken.Receiver}>(path)!
             artistTreasury.deposit(from: <- vaultRef.withdraw(amount: royalties)) 
             // Mint the NFT
-            let nft <- create NFT(pieceTitle: pieceName, artistName: artistName, description: description, image: image)
+            let nft <- create NFT(pieceTitle: pieceName, artistName: artistName, artistID: artistID, description: description, image: image)
 
 			if let recipientCollection = getAccount(recipient)
 				.capabilities.borrow<&{NonFungibleToken.Receiver}>(Mneme.CollectionPublicPath) 
@@ -1056,13 +1058,13 @@ contract Mneme: NonFungibleToken, ViewResolver {
 			}
         }  
         // Helper function to create the community pool
-          access(self) fun createCommunityPool(artistName: String) {
+          access(self) fun createCommunityPool(artistID: UInt64) {
             pre {
-                Mneme.artists[artistName] == nil: "This artist already has a community pool"
-            }
+                Mneme.artists[artistID] == nil: "This artist already has a community pool"
+            } 
             // This pool is either going to be on 30 days period or per season
             // If it is per season, then it's tied to that season's NFTs
-            let path = "Mneme_\(artistName)_community_pool"
+            let path = "Mneme_artist_\(artistID)_community_pool"
             let pool <-  FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
             // Save the pool to storage
             Mneme.account.storage.save(<- pool, to: StoragePath(identifier: path)!)
@@ -1089,40 +1091,43 @@ contract Mneme: NonFungibleToken, ViewResolver {
         return artists
     }
     // public function to get an Artist's metadata by name
-    access(all) fun getArtist(name: String): MetadataViews.Traits? {
+    access(all) fun getArtist(id: UInt64): MetadataViews.Traits? {
         pre {
-            Mneme.artists[name] != nil: "This artist does not exist"
+            Mneme.artists[id] != nil: "This artist does not exist"
         }
         // borrow ArtStorage from Account
         let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+        let name = Mneme.artists[id]!
         let artist = storage.getArtist(name: name)
         return artist
     }
     // Get Artist account address
-    access(all) fun getArtistAccountAddress(name: String): Address {
+    access(all) fun getArtistAccountAddress(id: UInt64): Address {
         pre {
-            Mneme.artists[name] != nil: "This artist does not exist"
+            Mneme.artists[id] != nil: "This artist does not exist"
         }
         let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+        let name = Mneme.artists[id]!
         let accountAddress = storage.getArtistAccountAddress(name: name)
         return accountAddress
     }
     // Get Artist royalties
-    access(all) fun getArtistRoyalties(name: String): UFix64? {
+    access(all) fun getArtistRoyalties(id: UInt64): UFix64? {
         pre {
-            Mneme.artists[name] != nil: "This artist does not exist"
+            Mneme.artists[id] != nil: "This artist does not exist"
         }
         let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+        let name = Mneme.artists[id]!
         let royalties = storage.getArtistRoyalties(name: name)
         return royalties
     }
     // Public function to get an Artist's community pool
-    access(all) fun getArtistCommunityPool(artistName: String): UFix64 {
+    access(all) fun getArtistCommunityPool(id: UInt64): UFix64 {
         pre {
-            Mneme.artists[artistName] != nil: "This artist does not exist"
+            Mneme.artists[id] != nil: "This artist does not exist"
         }
 
-        let path = PublicPath(identifier: "Mneme_\(artistName)_community_pool")!
+        let path = PublicPath(identifier: "Mneme_artist_\(id)_community_pool")!
 		let artistTreasury = getAccount(Mneme.account.address).capabilities.borrow<&{FungibleToken.Balance}>(path)!
         return artistTreasury.balance
     }
