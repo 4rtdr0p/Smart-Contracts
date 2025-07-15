@@ -33,7 +33,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // Dictionary to map artists by name to their id
     access(self) let artists:  {String: UInt64}
     // Dictionary to map Piece by name to their metadata
-    // access(self) let pieces: @{String: Piece}
+    access(self) let pieces: {String: UInt64}
 
     // Track of total supply of Mneme NFTs
     access(all) var totalSupply: UInt64
@@ -88,12 +88,12 @@ contract Mneme: NonFungibleToken, ViewResolver {
     access(all) resource ArtStorage {
 
         access(all) let artists: @{String: Artist}
-        access(all) let pieces: {String: Piece}
+        // access(all) let pieces: {String: Piece}
         access(all) let future: {String: AnyStruct}
 
         init() {
             self.artists <- {}
-            self.pieces = {}
+            // self.pieces = {}
             self.future = {}
         }
         // Function to add an Artist to the storage
@@ -136,42 +136,39 @@ contract Mneme: NonFungibleToken, ViewResolver {
             let communityRoyalties = artist?.communityRoyalties
             return communityRoyalties
         }
-        // Function to get all stored Artists
-        // Function to get all stored Pieces
-        access(all) view fun getAllPieces(): {String: Piece} {
-            return self.pieces
-        }
-        // Function to get a Piece's metadata
-        access(all) view fun getPiece(_ pieceName: String): Piece {
-            pre {
-                self.pieces[pieceName] != nil: "There's no Piece by the name: \(pieceName)"
-            }
-            return self.pieces[pieceName]!
-        }
-        // Function to get a Piece's price
-        access(all) view fun getPiecePrice(_ pieceName: String): UFix64 {
-            pre {
-                self.pieces[pieceName] != nil: "There's no Piece by the name: \(pieceName)"
-            }
-            return self.pieces[pieceName]!.price
-        }
+
         // Function to add a Piece to the storage
-        access(AddPiece) fun addPiece(newPiece: Piece) {
+        access(AddPiece) fun addPiece(newPiece: @Piece, artistName: String) {
             pre {
-                self.pieces[newPiece.title] == nil: "There's already a Piece by the name: \(newPiece.title)"
+                self.artists[artistName] != nil: "There's no Artist by the name: \(artistName)"
             }
-            self.pieces[newPiece.title] = newPiece
+            let artist = &self.artists[artistName] as &Artist?
+            artist!.addPiece(newPiece: <- newPiece) 
+        }
+        // Get a Piece's metadata
+        access(all) fun getPiece(id: UInt64, artistName: String): MetadataViews.Traits? {
+            pre {
+                self.artists[artistName] != nil: "There's no Artist by the name: \(artistName)"
+            }
+            let artist = &self.artists[artistName] as &Artist?
+            let metadata = artist!.getPieceMetadata(id: id)
+
+            return metadata
         }
         // Function to update a Piece's sentiment
         access(UpdateSentiment)
         fun updateSentiment(
-            _ pieceName: String,
+            _ pieceID: UInt64,
+            _ artistName: String,
             _ newViewsCount: Int64,
             _ newLikesCount: Int64,
             _ newSharesCount: Int64,
-            _ newPurchasesCount: Int64
-        ) {
-            self.pieces[pieceName]!.updateSentiment(newViewsCount: newViewsCount, newLikesCount: newLikesCount, newSharesCount: newSharesCount, newPurchasesCount: newPurchasesCount)
+            _ newPurchasesCount: Int64) {
+            pre {
+                self.artists[artistName] != nil: "There's no Artist by the name: \(artistName)"
+            }
+            let artist = &self.artists[artistName] as &Artist?
+            artist!.updateSentiment(id: pieceID, newViewsCount: newViewsCount, newLikesCount: newLikesCount, newSharesCount: newSharesCount, newPurchasesCount: newPurchasesCount)
         }
     }
     // Struct for Artist's metadata
@@ -188,6 +185,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         access(all) var communityRoyalties: UFix64
         access(all) var extra: {String: AnyStruct}
         access(all) var image: String
+        access(all) var pieces: @{UInt64: Piece}
 
         init(
             _ name: String,
@@ -214,12 +212,34 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.communityRoyalties = communityRoyalties
             self.extra = {}
             self.image = image
-            // Emit event
+            self.pieces <- {}
             emit ArtistCreated(id: self.id, name: self.name, accountAddress: self.accountAddress)
         }
 
-        access(all) fun addExtra(key: String, value: AnyStruct) {
-            self.extra[key] = value
+        access(all) fun addPiece(newPiece: @Piece) {
+            self.pieces[newPiece.id] <-! newPiece
+        }
+        // Get a Piece's metadata
+        access(all) fun getPieceMetadata(id: UInt64): MetadataViews.Traits? {
+            pre {
+                self.pieces[id] != nil: "There's no Piece by the id: \(id)"
+            }
+            let piece = &self.pieces[id] as &Piece?
+            let metadata = piece!.resolveView(Type<MetadataViews.Traits>()) as! MetadataViews.Traits?
+            return metadata
+        }
+        // Function to update a Piece's sentiment
+        access(all) fun updateSentiment(
+            id: UInt64,
+            newViewsCount: Int64,
+            newLikesCount: Int64,
+            newSharesCount: Int64,
+            newPurchasesCount: Int64) {
+            pre {
+                self.pieces[id] != nil: "There's no Piece by the id: \(id)"
+            }
+            let piece = &self.pieces[id] as &Piece?
+            piece?.updateSentiment(newViewsCount: newViewsCount, newLikesCount: newLikesCount, newSharesCount: newSharesCount, newPurchasesCount: newPurchasesCount) ?? panic("Piece not found")
         }
         // Function to get an artist's account address
         access(all) view fun getAccountAddress(): Address {
@@ -307,9 +327,9 @@ contract Mneme: NonFungibleToken, ViewResolver {
         // Update attribute variable
     }
 
-    // The Piece struct represents the Art's metadata
+    // The Piece resource represents the Art's metadata
     // it serves as a blueprint from which NFTs can be minted
-    access(all) struct Piece {
+    access(all) resource Piece {
         // Piece's unique id 
         access(all) let id: UInt64
         // Piece's name
@@ -384,7 +404,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.image = image
         }
         // Functionality around a Piece's blueprint
-        access(UpdateSentiment)
+        access(all)
         fun updateSentiment(
             newViewsCount: Int64,
             newLikesCount: Int64,
@@ -397,12 +417,84 @@ contract Mneme: NonFungibleToken, ViewResolver {
                 self.sentimentTrack.shares <= newSharesCount: "The new Shares count has to be equal or higher than the current count"
                 self.sentimentTrack.purchases <= newPurchasesCount: "The new Purchases count has to be equal or higher than the current count"
             }
-            let sentiment = &self.sentimentTrack as &Mneme.Sentiment
+            let sentiment = &self.sentimentTrack as auth(UpdateSentiment) &Mneme.Sentiment
             let oldCount = sentiment.views
-            self.sentimentTrack.updateSentiment(newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
+            sentiment.updateSentiment(newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
 
             emit ViewsUpdated(pieceName: self.title, oldViewsCount: oldCount, newViewsCount: sentiment.views)
         }
+
+        access(self) view fun getTraits(): {String: AnyStruct} {
+            let traits = {
+                "id": self.id,
+                "title": self.title,
+                "artistName": self.artistName,
+                "description": self.description,
+                "artistAccount": self.artistAccount,
+                "creationDate": self.creationDate,
+                "creationLocation": self.creationLocation,
+                "artType": self.artType,
+                "medium": self.medium,
+                "subjectMatter": self.subjectMatter,
+                "provenanceNotes": self.provenanceNotes,
+                "acquisitionDetails": self.acquisitionDetails,
+                "productionDetails": self.productionDetails,
+                "sentimentTrack": self.sentimentTrack,
+                "price": self.price,
+                "image": self.image
+            }
+            return traits
+        }
+        // Standard to return Artist's metadata
+        access(all) view fun getViews(): [Type] {
+            return [
+                Type<MetadataViews.Display>(),
+                Type<MetadataViews.Royalties>(),
+                Type<MetadataViews.Editions>(),
+                Type<MetadataViews.ExternalURL>(),
+                Type<MetadataViews.NFTCollectionData>(),
+                Type<MetadataViews.NFTCollectionDisplay>(),
+                Type<MetadataViews.Serial>(),
+                Type<MetadataViews.Traits>(),
+                Type<MetadataViews.EVMBridgedMetadata>()
+			]
+        }       
+              access(all) fun resolveView(_ view: Type): AnyStruct? {
+                switch view {
+				case Type<MetadataViews.Display>():
+					return MetadataViews.Display(
+						name: self.title,
+						description: self.description,
+						thumbnail: MetadataViews.HTTPFile( 
+            				url: "data:image/png;base64,\(self.image)"
+            			)
+					)
+				case Type<MetadataViews.Traits>():
+					return MetadataViews.dictToTraits(dict: self.getTraits(), excludedNames: nil)
+				case Type<MetadataViews.NFTView>():
+					return MetadataViews.NFTView(
+						id: self.id,
+						uuid: self.uuid,
+						display: self.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?,
+						externalURL: self.resolveView(Type<MetadataViews.ExternalURL>()) as! MetadataViews.ExternalURL?,
+						collectionData: self.resolveView(Type<MetadataViews.NFTCollectionData>()) as! MetadataViews.NFTCollectionData?,
+						collectionDisplay: self.resolveView(Type<MetadataViews.NFTCollectionDisplay>()) as! MetadataViews.NFTCollectionDisplay?,
+						royalties: self.resolveView(Type<MetadataViews.Royalties>()) as! MetadataViews.Royalties?,
+						traits: self.resolveView(Type<MetadataViews.Traits>()) as! MetadataViews.Traits?
+					)
+				case Type<MetadataViews.NFTCollectionData>():
+					return Mneme.resolveContractView(resourceType: Type<@Mneme.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
+        		case Type<MetadataViews.ExternalURL>():
+        			return "https://www.artdrop.me"
+		        case Type<MetadataViews.NFTCollectionDisplay>():
+					return Mneme.resolveContractView(resourceType: Type<@Mneme.NFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
+				case Type<MetadataViews.Serial>():
+					return MetadataViews.Serial(
+						0
+					)
+			}
+			return nil
+        }   
     }
 
     // Struct to store the production details of a Piece
@@ -665,38 +757,23 @@ contract Mneme: NonFungibleToken, ViewResolver {
 	access(all) resource NFT: NonFungibleToken.NFT {
         access(all) let id: UInt64
         access(all) let pieceTitle: String
+        access(all) let description: String
         access(all) let artistName: String
+        access(all) let image: String
 
-        init(pieceTitle: String, artistName: String) {
+        init(pieceTitle: String, artistName: String, description: String, image: String) {
             // Increment the global Cards IDs
             Mneme.totalSupply = Mneme.totalSupply + 1
             self.id = Mneme.totalSupply
             self.pieceTitle = pieceTitle
             self.artistName = artistName
+            self.description = description
+            self.image = image
         }
 
-        access(all) view fun getMetadata(): Piece {
-            let metadata = Mneme.getPiece(self.pieceTitle)
+        access(all) fun getMetadata(): MetadataViews.Traits? {
+            let metadata = Mneme.getPiece(id: self.id, artistName: self.artistName)
             return metadata
-        }
-
-        access(all) view fun getTraits(): {String: AnyStruct} {
-            let piece = Mneme.getPiece(self.pieceTitle)
-            let traits = {
-                "Artist": piece.artistName,
-                "Title": piece.title,
-                "Description": piece.description,
-                "Creation Date": piece.creationDate,
-                "Art Type": piece.artType,
-                "Medium": piece.medium,
-                "Subject Matter": piece.subjectMatter,
-                "Provenance Notes": piece.provenanceNotes,
-                "Price": piece.price,
-                "Total Editions": piece.productionDetails.totalEditions,
-                "Sizes": piece.productionDetails.sizes,
-                "Artist Signature": piece.productionDetails.artistSignature
-            }
-            return traits
         }
 
         /// createEmptyCollection creates an empty Collection
@@ -721,18 +798,19 @@ contract Mneme: NonFungibleToken, ViewResolver {
 		}
         // Standard for resolving Views
         access(all) fun resolveView(_ view: Type): AnyStruct? {
-            	let metadata = self.getMetadata()
+            	let piece = Mneme.getPiece(id: self.id, artistName: self.artistName)!
+                
                 switch view {
 				case Type<MetadataViews.Display>():
 					return MetadataViews.Display(
 						name: self.pieceTitle,
-						description: metadata.description,
+						description: self.description,
 						thumbnail: MetadataViews.HTTPFile( 
-            				url: "data:image/png;base64,\(metadata.image)"
+            				url: "data:image/png;base64,\(self.image)"
             			)
 					)
 				case Type<MetadataViews.Traits>():
-					return MetadataViews.dictToTraits(dict: self.getTraits(), excludedNames: nil)
+					return piece
 				case Type<MetadataViews.NFTView>():
 					return MetadataViews.NFTView(
 						id: self.id,
@@ -915,7 +993,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             price: UFix64,
             image: String): UInt64 {
             // Create new Piece resource
-            let newPiece = Piece(title, description, artistName, artistAccount, creationDate, creationLocation, artType, medium, subjectMatter, provenanceNotes, acquisitionDetails, productionDetails, price, image)
+            let newPiece <- create Piece(title, description, artistName, artistAccount, creationDate, creationLocation, artType, medium, subjectMatter, provenanceNotes, acquisitionDetails, productionDetails, price, image)
             // store the new id 
             let newID = newPiece.id
             // emit event
@@ -923,23 +1001,23 @@ contract Mneme: NonFungibleToken, ViewResolver {
             // borrow ArtStorage from Account
             let storage = Mneme.account.storage.borrow<auth(AddPiece) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
             // Store the new resource inside the smart contract
-            storage.addPiece(newPiece: newPiece)
+            storage.addPiece(newPiece: <- newPiece, artistName: artistName)
 
             return newID
         } 
         // updateViews and other functions update the
         // sentiment track for a particular piece
-        /* access(all)
-        fun updateSentiment(
-            pieceName: String,
+        access(UpdateSentiment) fun updateSentiment(
+            pieceID: UInt64,
+            artistName: String,
             newViewsCount: Int64,
             newLikesCount: Int64,
             newSharesCount: Int64,
             newPurchasesCount: Int64) {
             // borrow ArtStorage from Account
             let storage = Mneme.account.storage.borrow<auth(UpdateSentiment) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
-            storage.updateSentiment(pieceName, newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
-        } */
+            storage.updateSentiment(pieceID, artistName, newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
+        } 
         // Mint Piece NFT
          /* access(all) fun mintPiece(
             pieceName: String,
@@ -1045,13 +1123,13 @@ contract Mneme: NonFungibleToken, ViewResolver {
         return artistTreasury.balance
     }
     // public function to get a dictionary of all artists
-    access(all) view fun getAllPieces(): {String: Mneme.Piece} {
+/*     access(all) view fun getAllPieces(): {String: Mneme.Piece} {
         // Borrow public capability for the art storage
         let storage = Mneme.account.capabilities.borrow<&Mneme.ArtStorage>(Mneme.ArtStoragePublicPath)!
         let pieces = storage.getAllPieces()
 
         return pieces
-    }
+    } */
     // public function to get the sentiment on a Piece
    /*  access(all) view fun getPieceSentiment(pieceName: String): Sentiment {
         // borrow ArtStorage from Account
@@ -1061,10 +1139,10 @@ contract Mneme: NonFungibleToken, ViewResolver {
     }  */
    
     // public function to get a Piece's metadata
-    access(all) view fun getPiece(_ pieceName: String): Piece {
+    access(all) fun getPiece(id: UInt64, artistName: String): MetadataViews.Traits? {
         let storage = Mneme.account.capabilities.borrow<&Mneme.ArtStorage>(Mneme.ArtStoragePublicPath)!
 
-        let piece = storage.getPiece(pieceName)
+        let piece = storage.getPiece(id: id, artistName: artistName)
         return piece
     } 
     // -----------------------------------------------------------------------
@@ -1094,7 +1172,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         ]
     }
     // Public function to return general metadata around the collection
-    access(all) fun resolveContractView(resourceType: Type?, viewType: Type): AnyStruct? {
+    access(all) view fun resolveContractView(resourceType: Type?, viewType: Type): AnyStruct? {
         switch viewType {
             case Type<MetadataViews.NFTCollectionData>():
                 let collectionData = MetadataViews.NFTCollectionData(
@@ -1134,7 +1212,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
     init() {
         self.collectionInfo = {}
         self.artists = {}
-        // self.pieces <- {}
+        self.pieces = {}
         self.totalSupply = 0
         self.totalArtist = 0
         self.totalPieces = 0

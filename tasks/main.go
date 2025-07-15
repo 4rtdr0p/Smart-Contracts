@@ -62,34 +62,41 @@ func main() {
 		WithArg("price", "844.0"),
 		WithArg("encodedImg", "https://www.johndoe.com/images/sunflowers.jpg"),
 	)
-	// mint
-	o.Script("get_all_pieces")
+
+	o.Script("get_piece",
+		WithArg("id", 1),
+		WithArg("artistName", "John Doe"),
+	)
 	// Update a Piece's blueprint with sentiment feedback
 	o.Tx("mneme/admin/update_piece_sentiments",
-		WithSigner("Mneme"),
-		WithArg("pieceName", "Tree of Knowledge"),
+		WithSigner("account"),
+		WithArg("pieceID", 1),
+		WithArg("artistName", "John Doe"),
 		WithArg("newViewsCount", 100),
 		WithArg("newLikesCount", 100),
 		WithArg("newSharesCount", 100),
 		WithArg("newPurchasesCount", 100),
 	)
 	// Get a Piece's views
-	o.Script("get_all_pieces")
+	o.Script("get_piece",
+		WithArg("id", 1),
+		WithArg("artistName", "John Doe"),
+	)
 
 	// Mint a Piece into bob's account
-	o.Tx("Mneme/admin/mint_piece",
-		WithSigner("account"),
-		WithArg("pieceName", "Sunflowers"),
-		WithArg("artistName", "John Doe"),
-		WithArg("recipient", "account"),
-	)
-	// Check the artist's pool
-	o.Script("get_artist_pool",
-		WithArg("artistName", "Martin"),
-	)
+	/* 	o.Tx("Mneme/admin/mint_piece",
+	   		WithSigner("account"),
+	   		WithArg("pieceName", "Sunflowers"),
+	   		WithArg("artistName", "John Doe"),
+	   		WithArg("recipient", "account"),
+	   	)
+	   	// Check the artist's pool
+	   	o.Script("get_artist_pool",
+	   		WithArg("artistName", "Martin"),
+	   	)
 
-	o.Script("get_owned_nfts",
-		WithArg("account", "Mneme"),
-	)
+	   	o.Script("get_owned_nfts",
+	   		WithArg("account", "Mneme"),
+	   	) */
 
 }
