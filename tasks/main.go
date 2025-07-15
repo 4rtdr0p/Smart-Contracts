@@ -32,21 +32,17 @@ func main() {
 		WithArg("socials", `{"Website": "https://www.johndoe.com/"}`),
 		WithArg("representation", "N/A"),
 		WithArg("accountAddress", "0x12ecc177508efad8"),
-		WithArg("communityRoyalties", "0.0"),
+		WithArg("communityRoyalties", "0.5"),
 		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
 	)
 	o.Script("get_artist",
 		WithArg("name", "John Doe"),
 	)
-	/* 	o.Tx("Mneme/testArtistEnt",
-		WithSigner("bob"),
+	o.Script("get_all_artists")
+	// get that artist's community pool
+	o.Script("get_artist_pool",
 		WithArg("artistName", "John Doe"),
-	) */
-	/* 	o.Script("get_all_artists")
-	   	// get that artist's community pool
-	   	o.Script("get_artist_pool",
-	   		WithArg("artistName", "John Doe"),
-	   	) */
+	)
 
 	// Create a new Piece blueprint
 	color.Green("Admin creates a Piece resource")

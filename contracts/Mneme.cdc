@@ -30,8 +30,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     // Dictionary to hold general collection information
     access(self) let collectionInfo: {String: AnyStruct}  
-    // Dictionary to map artists by name to their metadata
-    // access(self) let artists: @{String: Artist}
+    // Dictionary to map artists by name to their id
+    access(self) let artists:  {String: UInt64}
     // Dictionary to map Piece by name to their metadata
     // access(self) let pieces: @{String: Piece}
 
@@ -104,6 +104,10 @@ contract Mneme: NonFungibleToken, ViewResolver {
 
             emit ArtistCreated(id: newArtist.id, name: newArtist.name, accountAddress: newArtist.accountAddress)
             self.artists[newArtist.name] <-! newArtist
+        }
+        // Function to get all Artists stored
+        access(all) view fun getAllArtists(): [String] {
+            return self.artists.keys
         }
         // Function to get an Artist's metadata
         access(all) fun getArtist(name: String): MetadataViews.Traits? {
@@ -859,6 +863,9 @@ contract Mneme: NonFungibleToken, ViewResolver {
             accountAddress: Address,
             communityRoyalties: UFix64,
             image: String): UInt64 {
+            pre {
+                Mneme.artists[name] == nil: "This artist already exists"
+            }
             // borrow ArtStorage from Account
             let storage = Mneme.account.storage.borrow<auth(AddArtist) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
             // Create the community pool
@@ -869,6 +876,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
             let newID = newArtist.id
             // Save artist to the dictionary stored inside the smart contract
             storage.addArtist(newArtist: <- newArtist)
+            // Save artist to the dictionary stored inside the smart contract
+            Mneme.artists[name] = newID
 
             return newID
         }
@@ -978,12 +987,17 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // Mneme public functions
     // -----------------------------------------------------------------------
     // public function to get a dictionary of all artists
-/*     access(all) view fun getArtists(): {String: Artist} {
-        let artists = self.artists.borrow()
+    access(all) view fun getAllArtistsNames(): [String] {
+        // borrow ArtStorage from Account
+        let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+        let artists = storage.getAllArtists()
         return artists
-    } */
+    }
     // public function to get an Artist's metadata by name
     access(all) fun getArtist(name: String): MetadataViews.Traits? {
+        pre {
+            Mneme.artists[name] != nil: "This artist does not exist"
+        }
         // borrow ArtStorage from Account
         let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
         let artist = storage.getArtist(name: name)
@@ -991,6 +1005,9 @@ contract Mneme: NonFungibleToken, ViewResolver {
     }
     // Get Artist royalties
     access(all) fun getArtistRoyalties(name: String): UFix64? {
+        pre {
+            Mneme.artists[name] != nil: "This artist does not exist"
+        }
         let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
         let royalties = storage.getArtistRoyalties(name: name)
         return royalties
@@ -1094,7 +1111,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
 	}
     init() {
         self.collectionInfo = {}
-        // self.artists <- {}
+        self.artists = {}
         // self.pieces <- {}
         self.totalSupply = 0
         self.totalArtist = 0
