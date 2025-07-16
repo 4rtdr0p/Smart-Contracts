@@ -1079,14 +1079,9 @@ contract Mneme: NonFungibleToken, ViewResolver {
             // Mint the NFT
             let nft <- create NFT(pieceTitle: pieceName, artistName: artistName, artistID: artistID, description: description, image: image)
 
-			if let recipientCollection = getAccount(recipient)
-				.capabilities.borrow<&{NonFungibleToken.Receiver}>(Mneme.CollectionPublicPath) 
-				{
-					recipientCollection.deposit(token: <- nft)
-			} else {
-				let storage = Mneme.account.storage.borrow<auth(StorePrint) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
-                storage.addNFT(nft: <- nft, address: recipient)
-			}
+			let storage = Mneme.account.storage.borrow<auth(StorePrint) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+            storage.addNFT(nft: <- nft, address: recipient)
+
         }  
         // Helper function to create the community pool
           access(self) fun createCommunityPool(artistID: UInt64) {

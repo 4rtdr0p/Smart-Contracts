@@ -50,6 +50,7 @@ func main() {
 		WithSigner("account"),
 		WithArg("title", "Sunflowers"),
 		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
+		WithArg("artistID", 1),
 		WithArg("artistName", "John Doe"),
 		WithArg("creationDate", "2008"),
 		WithArg("creationLocation", "Unspecified"),
@@ -87,7 +88,7 @@ func main() {
 	o.Tx("Mneme/admin/mint_piece",
 		WithSigner("account"),
 		WithArg("pieceName", "Sunflowers"),
-		WithArg("artistName", "John Doe"),
+		WithArg("artistID", 1),
 		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
 		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
 		WithArg("piecePrice", "844.0"),
@@ -95,11 +96,18 @@ func main() {
 	)
 	// Check the artist's pool
 	o.Script("get_artist_pool",
-		WithArg("artistName", "John Doe"),
+		WithArg("id", 1),
 	)
 
 	o.Script("get_owned_nfts",
 		WithArg("account", "Mneme"),
 	)
 
+	o.Tx("Mneme/claim_print",
+		WithSigner("account"),
+	)
+
+	o.Script("get_owned_nfts",
+		WithArg("account", "Mneme"),
+	)
 }
