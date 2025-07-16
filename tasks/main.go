@@ -21,6 +21,10 @@ func main() {
 	color.Blue("Mneme Contract testing")
 
 	color.Green("Admin creates an Artist resource")
+	// Setup bob
+	o.Tx("Mneme/setup",
+		WithSigner("bob"),
+	)
 
 	// Create a new Artist struct
 	o.Tx("Mneme/admin/create_artist",
@@ -92,7 +96,7 @@ func main() {
 		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
 		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
 		WithArg("piecePrice", "844.0"),
-		WithArg("recipient", "account"),
+		WithArg("recipient", "bob"),
 	)
 	// Check the artist's pool
 	o.Script("get_artist_pool",
@@ -100,14 +104,15 @@ func main() {
 	)
 
 	o.Script("get_owned_nfts",
-		WithArg("account", "Mneme"),
+		WithArg("account", "bob"),
 	)
 
 	o.Tx("Mneme/claim_print",
-		WithSigner("account"),
+		WithSigner("bob"),
+		WithArg("id", 1),
 	)
 
 	o.Script("get_owned_nfts",
-		WithArg("account", "Mneme"),
+		WithArg("account", "bob"),
 	)
 }

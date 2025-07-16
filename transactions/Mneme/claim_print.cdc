@@ -1,7 +1,7 @@
 import "Mneme"
 import "NonFungibleToken"
 
-transaction() {
+transaction(id: UInt64) {
 
     let collectionRef: auth(Mneme.ClaimPrint) &Mneme.Collection
     prepare(signer: auth(BorrowValue) &Account) {
@@ -9,6 +9,6 @@ transaction() {
     }
 
     execute {
-        self.collectionRef.claimPrint()
-    }
+        self.collectionRef.claimPrint(id: id)
+    }   
 }

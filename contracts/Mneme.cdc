@@ -86,27 +86,26 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     // Storage resource for Prints yet to be claimed
     access(all) resource ArtStorage {
-        access(account) let nftStorage: @{Address: {UInt64: NFT}}
+        access(account) let nftStorage: @{UInt64: NFT}
 
         init() {
             self.nftStorage <- {}
         }
 
         access(StorePrint) fun addNFT(nft: @NFT, address: Address) {
-            self.nftStorage[address] <-! {nft.id: <- nft}
+            self.nftStorage[nft.id] <-! <- nft
         }
 
-        access(DeliverPrint) fun deliverPrint(address: Address): @{UInt64: Mneme.NFT} {
+        access(DeliverPrint) fun deliverPrint(address: Address, id: UInt64): @Mneme.NFT {
             pre {
-                self.nftStorage[address] != nil: "There's no NFTs stored for the address: \(address)"
+                self.nftStorage[id] != nil: "There's no NFTs stored for the id: \(id)"
+                
             }
-            var tokens: @{UInt64: Mneme.NFT} <- {}
-
-            for id in self.nftStorage[address]?.keys! {
-                let token <- self.nftStorage[address]?.remove(key: id) as! @NFT
-                tokens[id] <-! token
+            let token <- self.nftStorage.remove(key: id) as! @NFT
+            if token.ownerAddress != address {
+                panic("The NFT is not owned by the address: \(address)")
             }
-            return <- tokens
+            return <- token
         }
     }
     // Storage resource for all of the Pieces' metadata
@@ -786,8 +785,9 @@ contract Mneme: NonFungibleToken, ViewResolver {
         access(all) let artistName: String
         access(all) let artistID: UInt64
         access(all) let image: String
+        access(all) let ownerAddress: Address
 
-        init(pieceTitle: String, artistName: String, artistID: UInt64, description: String, image: String) {
+        init(pieceTitle: String, artistName: String, artistID: UInt64, description: String, image: String, owner: Address) {
             // Increment the global Cards IDs
             Mneme.totalSupply = Mneme.totalSupply + 1
             self.id = Mneme.totalSupply
@@ -796,6 +796,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.description = description
             self.image = image
             self.artistID = artistID
+            self.ownerAddress = owner
         }
 
         access(all) fun getMetadata(): MetadataViews.Traits? {
@@ -959,15 +960,11 @@ contract Mneme: NonFungibleToken, ViewResolver {
             return <-Mneme.createEmptyCollection(nftType: Type<@Mneme.NFT>())
         }
         // Claim Print
-        access(ClaimPrint) fun claimPrint() {
+        access(ClaimPrint) fun claimPrint(id: UInt64) {
             let storage = Mneme.account.storage.borrow<auth(DeliverPrint) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
             
-            let tokens <- storage.deliverPrint(address: self.owner!.address)
-            for id in tokens.keys {
-                let token <- tokens.remove(key: id) as! @NFT
-                self.deposit(token: <- token)
-            }
-            destroy <- tokens
+            let token <- storage.deliverPrint(address: self.owner!.address, id: id)
+            self.deposit(token: <- token)
         }
     }
     // -----------------------------------------------------------------------
@@ -1077,7 +1074,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
 		    let artistTreasury = getAccount(Mneme.account.address).capabilities.borrow<&{FungibleToken.Receiver}>(path)!
             artistTreasury.deposit(from: <- vaultRef.withdraw(amount: royalties)) 
             // Mint the NFT
-            let nft <- create NFT(pieceTitle: pieceName, artistName: artistName, artistID: artistID, description: description, image: image)
+            let nft <- create NFT(pieceTitle: pieceName, artistName: artistName, artistID: artistID, description: description, image: image, owner: recipient)
 
 			let storage = Mneme.account.storage.borrow<auth(StorePrint) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
             storage.addNFT(nft: <- nft, address: recipient)
