@@ -26,7 +26,7 @@ transaction(
             nationality: nationality,
             preferredMedium: preferredMedium,
             socials: socials,
-            representation: representation,
+            representation: representation, 
             accountAddress: accountAddress,
             communityRoyalties: communityRoyalties,
             image: image)

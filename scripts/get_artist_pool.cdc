@@ -1,6 +1,6 @@
 import "Mneme"
 
 access(all)
-fun main(artistName: String): UFix64 {
-  return Mneme.getArtistCommunityPool(artistName: artistName) 
-}
+fun main(id: UInt64): UFix64 {
+  return Mneme.getArtistCommunityPool(id: id) 
+} 

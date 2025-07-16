@@ -36,12 +36,12 @@ func main() {
 		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
 	)
 	o.Script("get_artist",
-		WithArg("name", "John Doe"),
+		WithArg("id", 1),
 	)
 	o.Script("get_all_artists")
 	// get that artist's community pool
 	o.Script("get_artist_pool",
-		WithArg("artistName", "John Doe"),
+		WithArg("id", 1),
 	)
 
 	// Create a new Piece blueprint

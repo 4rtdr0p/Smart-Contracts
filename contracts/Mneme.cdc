@@ -50,6 +50,9 @@ contract Mneme: NonFungibleToken, ViewResolver {
     access(all) entitlement UpdateOwner
     access(all) entitlement UpdateSentiment
     access(all) entitlement MintPiece
+    access(all) entitlement StorePrint
+    access(all) entitlement ClaimPrint
+    access(all) entitlement DeliverPrint
     // -----------------------------------------------------------------------
     // Mneme contract Events
     // ----------------------------------------------------------------------- 
@@ -67,10 +70,11 @@ contract Mneme: NonFungibleToken, ViewResolver {
 	access(all) let CollectionStoragePath: StoragePath
 	access(all) let CollectionPublicPath: PublicPath
 	access(all) let AdministratorStoragePath: StoragePath
-	access(all) let ArtStoragePath: StoragePath
+	access(all) let ArtDropPath: StoragePath
 	access(all) let PistisStoragePath: StoragePath
 	access(all) let PistisPublicPath: PublicPath
-	access(all) let ArtStoragePublicPath: PublicPath
+	access(all) let ArtDropPublicPath: PublicPath
+	access(all) let ArtStoragePath: StoragePath
 
     // -----------------------------------------------------------------------
     // Mneme contract-level Composite Type definitions
@@ -80,16 +84,36 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // actual stored values, but an instance (or object) of one of these Types
     // can be created by this contract that contains stored values.
     // -----------------------------------------------------------------------
-/*     access(all) resource interface ArtStoragePublic {
-        access(all) view fun getAllPieces(): {String: Piece}
-        access(all) view fun getPiece(_ pieceName: String): Piece
-    } */
+    // Storage resource for Prints yet to be claimed
+    access(all) resource ArtStorage {
+        access(account) let nftStorage: @{Address: {UInt64: NFT}}
+
+        init() {
+            self.nftStorage <- {}
+        }
+
+        access(StorePrint) fun addNFT(nft: @NFT, address: Address) {
+            self.nftStorage[address] <-! {nft.id: <- nft}
+        }
+
+        access(DeliverPrint) fun deliverPrint(address: Address): @{UInt64: Mneme.NFT} {
+            pre {
+                self.nftStorage[address] != nil: "There's no NFTs stored for the address: \(address)"
+            }
+            var tokens: @{UInt64: Mneme.NFT} <- {}
+
+            for id in self.nftStorage[address]?.keys! {
+                let token <- self.nftStorage[address]?.remove(key: id) as! @NFT
+                tokens[id] <-! token
+            }
+            return <- tokens
+        }
+    }
     // Storage resource for all of the Pieces' metadata
     // this is stored inside the smart contract's account
-    access(all) resource ArtStorage {
+    access(all) resource ArtDrop {
 
         access(all) let artists: @{String: Artist}
-        // access(all) let pieces: {String: Piece}
         access(all) let future: {String: AnyStruct}
 
         init() {
@@ -934,6 +958,17 @@ contract Mneme: NonFungibleToken, ViewResolver {
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
             return <-Mneme.createEmptyCollection(nftType: Type<@Mneme.NFT>())
         }
+        // Claim Print
+        access(ClaimPrint) fun claimPrint() {
+            let storage = Mneme.account.storage.borrow<auth(DeliverPrint) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+            
+            let tokens <- storage.deliverPrint(address: self.owner!.address)
+            for id in tokens.keys {
+                let token <- tokens.remove(key: id) as! @NFT
+                self.deposit(token: <- token)
+            }
+            destroy <- tokens
+        }
     }
     // -----------------------------------------------------------------------
     // Mneme Administrator Resource
@@ -960,8 +995,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
          pre {
                 Mneme.artists.values.contains(name) == false: "There's already an artist with this name"
             }
-            // borrow ArtStorage from Account
-            let storage = Mneme.account.storage.borrow<auth(AddArtist) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+            // borrow ArtDrop from Account
+            let storage = Mneme.account.storage.borrow<auth(AddArtist) &Mneme.ArtDrop>(from: Mneme.ArtDropPath)!
             // Create new Artist struct
             let newArtist <- create Artist(name, biography, nationality, preferredMedium, socials, representation, accountAddress, communityRoyalties, image)
             // Get the new ID
@@ -1001,8 +1036,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
             let newID = newPiece.id
             // emit event
             emit PieceCreated(id: newPiece.id, title: newPiece.title, artist: newPiece.artistName)
-            // borrow ArtStorage from Account
-            let storage = Mneme.account.storage.borrow<auth(AddPiece) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+            // borrow ArtDrop from Account
+            let storage = Mneme.account.storage.borrow<auth(AddPiece) &Mneme.ArtDrop>(from: Mneme.ArtDropPath)!
             // Store the new resource inside the smart contract
             storage.addPiece(newPiece: <- newPiece, artistName: artistName)
 
@@ -1017,8 +1052,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
             newLikesCount: Int64,
             newSharesCount: Int64,
             newPurchasesCount: Int64) {
-            // borrow ArtStorage from Account
-            let storage = Mneme.account.storage.borrow<auth(UpdateSentiment) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+            // borrow ArtDrop from Account
+            let storage = Mneme.account.storage.borrow<auth(UpdateSentiment) &Mneme.ArtDrop>(from: Mneme.ArtDropPath)!
             storage.updateSentiment(pieceID, artistName, newViewsCount, newLikesCount, newSharesCount, newPurchasesCount)
         } 
         // Mint Piece NFT
@@ -1049,12 +1084,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
 				{
 					recipientCollection.deposit(token: <- nft)
 			} else {
-				destroy nft
-/*  				if let storage = &Piece.nftStorage[recipient] as &{UInt64: NFT}? {
-					storage[nft.id] <-! nft
-				} else {
-					Piece.nftStorage[recipient] <-! {nft.id: <- nft}
-				}  */
+				let storage = Mneme.account.storage.borrow<auth(StorePrint) &Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+                storage.addNFT(nft: <- nft, address: recipient)
 			}
         }  
         // Helper function to create the community pool
@@ -1085,8 +1116,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     // public function to get a dictionary of all artists
     access(all) view fun getAllArtistsNames(): [String] {
-        // borrow ArtStorage from Account
-        let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+        // borrow ArtDrop from Account
+        let storage = Mneme.account.storage.borrow<&Mneme.ArtDrop>(from: Mneme.ArtDropPath)!
         let artists = storage.getAllArtists()
         return artists
     }
@@ -1095,8 +1126,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
         pre {
             Mneme.artists[id] != nil: "This artist does not exist"
         }
-        // borrow ArtStorage from Account
-        let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+        // borrow ArtDrop from Account
+        let storage = Mneme.account.storage.borrow<&Mneme.ArtDrop>(from: Mneme.ArtDropPath)!
         let name = Mneme.artists[id]!
         let artist = storage.getArtist(name: name)
         return artist
@@ -1106,7 +1137,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         pre {
             Mneme.artists[id] != nil: "This artist does not exist"
         }
-        let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+        let storage = Mneme.account.storage.borrow<&Mneme.ArtDrop>(from: Mneme.ArtDropPath)!
         let name = Mneme.artists[id]!
         let accountAddress = storage.getArtistAccountAddress(name: name)
         return accountAddress
@@ -1116,7 +1147,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         pre {
             Mneme.artists[id] != nil: "This artist does not exist"
         }
-        let storage = Mneme.account.storage.borrow<&Mneme.ArtStorage>(from: Mneme.ArtStoragePath)!
+        let storage = Mneme.account.storage.borrow<&Mneme.ArtDrop>(from: Mneme.ArtDropPath)!
         let name = Mneme.artists[id]!
         let royalties = storage.getArtistRoyalties(name: name)
         return royalties
@@ -1134,22 +1165,22 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // public function to get a dictionary of all artists
 /*     access(all) view fun getAllPieces(): {String: Mneme.Piece} {
         // Borrow public capability for the art storage
-        let storage = Mneme.account.capabilities.borrow<&Mneme.ArtStorage>(Mneme.ArtStoragePublicPath)!
+        let storage = Mneme.account.capabilities.borrow<&Mneme.ArtDrop>(Mneme.ArtDropPublicPath)!
         let pieces = storage.getAllPieces()
 
         return pieces
     } */
     // public function to get the sentiment on a Piece
    /*  access(all) view fun getPieceSentiment(pieceName: String): Sentiment {
-        // borrow ArtStorage from Account
-        let storage = Mneme.account.capabilities.borrow<&{Mneme.ArtStoragePublic}>(Mneme.ArtStoragePublicPath)!
+        // borrow ArtDrop from Account
+        let storage = Mneme.account.capabilities.borrow<&{Mneme.ArtDropPublic}>(Mneme.ArtDropPublicPath)!
         let piece = storage.getPiece(pieceName)
         return piece.sentimentTrack
     }  */
    
     // public function to get a Piece's metadata
     access(all) fun getPiece(id: UInt64, artistName: String): MetadataViews.Traits? {
-        let storage = Mneme.account.capabilities.borrow<&Mneme.ArtStorage>(Mneme.ArtStoragePublicPath)!
+        let storage = Mneme.account.capabilities.borrow<&Mneme.ArtDrop>(Mneme.ArtDropPublicPath)!
 
         let piece = storage.getPiece(id: id, artistName: artistName)
         return piece
@@ -1231,20 +1262,20 @@ contract Mneme: NonFungibleToken, ViewResolver {
 		self.CollectionStoragePath = StoragePath(identifier: identifier)! 
 		self.CollectionPublicPath = PublicPath(identifier: identifier)!
 		self.AdministratorStoragePath = StoragePath(identifier: "\(identifier)Administrator")!
-		self.ArtStoragePath = StoragePath(identifier: "\(identifier)ArtStorage")!
-        self.ArtStoragePublicPath = PublicPath(identifier: "\(identifier)ArtStoragePublic")!
+		self.ArtDropPath = StoragePath(identifier: "\(identifier)ArtDrop")!
+        self.ArtDropPublicPath = PublicPath(identifier: "\(identifier)ArtDropPublic")!
         self.PistisStoragePath = StoragePath(identifier: "\(identifier)Pistis")!
         self.PistisPublicPath = PublicPath(identifier: "\(identifier)Pistis")!
-
+        self.ArtStoragePath = StoragePath(identifier: "\(identifier)ArtStorage")!
 		// Create a Administrator resource and save it to Mneme account storage
 		let administrator <- create Administrator()
 		self.account.storage.save(<- administrator, to: self.AdministratorStoragePath)
-		// Create a ArtStorage resource and save it to Mneme account storage
-		let artStorage <- create ArtStorage()
-		self.account.storage.save(<- artStorage, to: self.ArtStoragePath)
+		// Create a ArtDrop resource and save it to Mneme account storage
+		let artDrop <- create ArtDrop()
+		self.account.storage.save(<- artDrop, to: self.ArtDropPath)
         // Create a public capability for the art storage
-        let artStorageCap = self.account.capabilities.storage.issue<&Mneme.ArtStorage>(self.ArtStoragePath)
-		self.account.capabilities.publish(artStorageCap, at: self.ArtStoragePublicPath)
+        let artDropCap = self.account.capabilities.storage.issue<&Mneme.ArtDrop>(self.ArtDropPath)
+		self.account.capabilities.publish(artDropCap, at: self.ArtDropPublicPath)
 		// Create a Collection resource and save it to storage
 		let collection <- create Collection()
 		self.account.storage.save(<- collection, to: self.CollectionStoragePath)
@@ -1257,5 +1288,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
         // create a public capability for Pistis
 	    let pistisCap = self.account.capabilities.storage.issue<&Mneme.Pistis>(self.PistisStoragePath)
 		self.account.capabilities.publish(pistisCap, at: self.PistisPublicPath)
+        // Create a ArtStorage resource and save it to storage
+		let artStorage <- create ArtStorage()
+		self.account.storage.save(<- artStorage, to: self.ArtStoragePath)
 	}
 }
