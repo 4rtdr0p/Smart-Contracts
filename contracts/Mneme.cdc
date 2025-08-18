@@ -209,7 +209,10 @@ contract Mneme: NonFungibleToken, ViewResolver {
         access(all) var communityRoyalties: UFix64
         access(all) var extra: {String: AnyStruct}
         access(all) var image: String
+        // Dictionary to map Piece by id to their metadata
         access(all) var pieces: @{UInt64: Piece}
+        // Dictionary to map Piece by title to their id
+        access(all) var piecesByTitle: {String: UInt64}
 
         init(
             _ name: String,
@@ -237,10 +240,16 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.extra = {}
             self.image = image
             self.pieces <- {}
+            self.piecesByTitle = {}
             emit ArtistCreated(id: self.id, name: self.name, accountAddress: self.accountAddress)
         }
 
         access(all) fun addPiece(newPiece: @Piece) {
+            pre {
+                self.pieces[newPiece.id] == nil: "There's already a piece with this id"
+                self.piecesByTitle[newPiece.title] == nil: "There's already a piece with this title"
+            }
+            self.piecesByTitle[newPiece.title] = newPiece.id
             self.pieces[newPiece.id] <-! newPiece
         }
         // Get a Piece's metadata
@@ -980,6 +989,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         // Returns: the ID of the new Artist object
         //
         access(AddArtist) fun createArtist(
+            id: String,
             name: String,
             biography: String,
             nationality: String,
@@ -990,7 +1000,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             communityRoyalties: UFix64,
             image: String): UInt64 {
          pre {
-                Mneme.artists.values.contains(name) == false: "There's already an artist with this name"
+                Mneme.artists.values.contains(name) == false: "There's already an artist with this id"
             }
             // borrow ArtDrop from Account
             let storage = Mneme.account.storage.borrow<auth(AddArtist) &Mneme.ArtDrop>(from: Mneme.ArtDropPath)!

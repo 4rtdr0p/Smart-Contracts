@@ -1,4 +1,4 @@
-{	
+{
 	"contracts": {
 		"Mneme": {
 			"source": "contracts/Mneme.cdc",
@@ -79,26 +79,37 @@
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
 	"accounts": {
+		"ArtDrop Manager": {
+			"address": "3d7544c676efd05b",
+			"key": {
+				"type": "file",
+				"location": "ArtDrop Manager.pkey"
+			}
+		},
 		"emulator-account": {
-			"address": "0xf8d6e0586b0a20c7",
-			"key": "0x5207fc6478c602d37e344e4639ac4020707ad95b572ddfa88af9fbec61647ffa"
+			"address": "f8d6e0586b0a20c7",
+			"key": "5207fc6478c602d37e344e4639ac4020707ad95b572ddfa88af9fbec61647ffa"
 		},
 		"emulator-bob": {
 			"address": "179b6b1cb6755e31",
 			"key": "3b90c6ed0051a32a9bbbd8d584d04f9db4948a63974e0a4ac70d637193d7e4c7"
 		},
 		"testnet-artdrop": {
-			"address": "0x12ecc177508efad8",
+			"address": "12ecc177508efad8",
 			"key": "2de15f37c266103e486dbdc0c15273d234536036f1a0318dbec79e3a85daccde"
 		}
 	},
 	"deployments": {
 		"emulator": {
-			"emulator-account": ["Mneme"],
+			"emulator-account": [
+				"Mneme"
+			],
 			"emulator-bob": []
 		},
 		"testnet": {
-			"testnet-artdrop": ["Mneme"]
+			"testnet-artdrop": [
+				"Mneme"
+			]
 		}
 	}
 }

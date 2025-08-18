@@ -12,3 +12,5 @@ ArtDrop.pkey
 # flow
 emulator-account.pkey
 imports
+
+ArtDrop Manager.pkey

@@ -4,6 +4,7 @@ import "Mneme"
 // and store it in the Mneme smart contract
 
 transaction(
+    id: String,
     name: String,
     biography: String,
     nationality: String,
@@ -20,7 +21,8 @@ transaction(
         self.Administrator = admin.storage.borrow<auth(Mneme.AddArtist) &Mneme.Administrator>(from: Mneme.AdministratorStoragePath)!
     }
     execute {
-        let newCardID = self.Administrator.createArtist(
+        let newCardID = self.Administrator.createArtist(    
+            id: id,
             name: name,
             biography: biography,
             nationality: nationality,
