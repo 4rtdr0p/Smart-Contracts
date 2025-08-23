@@ -4,7 +4,6 @@ import "Mneme"
 // and store it in the Mneme smart contract
 
 transaction(
-    id: String,
     name: String,
     biography: String,
     nationality: String,
@@ -22,7 +21,6 @@ transaction(
     }
     execute {
         let newCardID = self.Administrator.createArtist(    
-            id: id,
             name: name,
             biography: biography,
             nationality: nationality,

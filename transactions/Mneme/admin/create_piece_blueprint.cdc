@@ -6,8 +6,8 @@ import "Mneme"
 transaction(
     title: String,
     description: String,
-    artistID: UInt64,
     artistName: String,
+    artistAddress: Address,
     creationDate: String,
     creationLocation: String,
     artType: String,
@@ -21,12 +21,11 @@ transaction(
     ) {
 
     let Administrator: &Mneme.Administrator
-    let artistAccount: Address?
     let productionDetails: Mneme.ProductionDetails
 
     prepare(admin: auth(BorrowValue) &Account) {
         self.Administrator = admin.storage.borrow<&Mneme.Administrator>(from: Mneme.AdministratorStoragePath)!
-        self.artistAccount = Mneme.getArtistAccountAddress(id: artistID)
+
 
         self.productionDetails = Mneme.ProductionDetails(
             "Near Mint",
@@ -56,7 +55,7 @@ transaction(
             title: title,
             description: description,
             artistName: artistName,
-            artistAccount: self.artistAccount!,
+            artistAccount: artistAddress,
             creationDate: creationDate,
             creationLocation: creationLocation,
             artType: artType,

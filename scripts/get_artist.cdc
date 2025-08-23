@@ -2,6 +2,6 @@ import "Mneme"
 import "MetadataViews"
 
 access(all)
-fun main(id: UInt64): MetadataViews.Traits? {
-  return Mneme.getArtist(id: id)
+fun main(address: Address): MetadataViews.Traits? {
+  return Mneme.getArtist(address: address)
 }
