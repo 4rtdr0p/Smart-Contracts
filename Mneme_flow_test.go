@@ -37,14 +37,14 @@ func TestFullFlow(t *testing.T) {
 		WithArg("preferredMedium", "Oil on Canvas"),
 		WithArg("socials", `{"Website": "https://www.johndoe.com/"}`),
 		WithArg("representation", "N/A"),
-		WithArg("accountAddress", "0x12ecc177508efad8"),
+		WithArg("accountAddress", "bob"),
 		WithArg("communityRoyalties", "0.5"),
 		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
 	).AssertSuccess(t).Print().GetIdFromEvent("ArtistCreated", "id")
 	fmt.Println(error, "artist id ", id)
 	// Get the artist
 	o.Script("get_artist",
-		WithArg("address", "0x12ecc177508efad8"),
+		WithArg("address", "bob"),
 	).Print()
 
 	// FAILED create artist with same id
@@ -57,7 +57,7 @@ func TestFullFlow(t *testing.T) {
 		WithArg("preferredMedium", "Oil on Canvas"),
 		WithArg("socials", `{"Website": "https://www.johndoe.com/"}`),
 		WithArg("representation", "N/A"),
-		WithArg("accountAddress", "0x12ecc177508efad8"),
+		WithArg("accountAddress", "bob"),
 		WithArg("communityRoyalties", "0.5"),
 		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
 	).AssertFailure(t, "There's already an artist with this account address.").Print()
@@ -67,7 +67,7 @@ func TestFullFlow(t *testing.T) {
 		WithSigner("account"),
 		WithArg("title", "Sunflowers"),
 		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
-		WithArg("artistAddress", "0x12ecc177508efad8"),
+		WithArg("artistAddress", "bob"),
 		WithArg("artistName", "John Doe"),
 		WithArg("creationDate", "2008"),
 		WithArg("creationLocation", "Unspecified"),
@@ -92,7 +92,7 @@ func TestFullFlow(t *testing.T) {
 		WithSigner("account"),
 		WithArg("title", "Sunflowers"),
 		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
-		WithArg("artistAddress", "0x12ecc177508efad8"),
+		WithArg("artistAddress", "bob"),
 		WithArg("artistName", "John Doe"),
 		WithArg("creationDate", "2008"),
 		WithArg("creationLocation", "Unspecified"),
@@ -107,14 +107,20 @@ func TestFullFlow(t *testing.T) {
 	).AssertFailure(t, `There's already a piece with this title`).Print()
 	// Mint a new Print
 	color.Green("Admin mints a new Print")
-	o.Tx("Mneme/admin/mint_print",
+	events := o.Tx("Mneme/admin/mint_print",
 		WithSigner("account"),
 		WithArg("XUID", "1234567890"),
 		WithArg("pieceName", "Sunflowers"),
-		WithArg("artistAddress", "0x12ecc177508efad8"),
+		WithArg("pieceId", pieceId),
+		WithArg("artistAddress", "bob"),
 		WithArg("paidPrice", "844.0"),
 		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
 		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
-		WithArg("recipient", "0x12ecc177508efad8"),
-	).AssertSuccess(t).Print()
+		WithArg("recipient", "bob"),
+	).AssertSuccess(t).Print().GetEventsWithName("PrintMinted")
+	fmt.Println(events)
+	// Get the print
+	o.Script("get_print",
+		WithArg("xuid", "1234567890"),
+	).Print()
 }

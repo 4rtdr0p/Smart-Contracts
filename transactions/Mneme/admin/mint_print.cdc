@@ -5,7 +5,8 @@ import "Mneme"
 
     transaction(
         XUID: String,
-        pieceName: String,
+        pieceName: String,  
+        pieceId: UInt64,
         artistAddress: Address,
         description: String,
         image: String,
@@ -21,6 +22,7 @@ import "Mneme"
         let newCardID = self.Administrator.mintPrint(
             XUID: XUID,
             pieceName: pieceName,
+            pieceId: pieceId,
             artistAddress: artistAddress, 
             paidPrice: paidPrice,
             description: description,
