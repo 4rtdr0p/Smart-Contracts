@@ -39,19 +39,19 @@ contract Mneme: NonFungibleToken, ViewResolver {
 
     // Track of total supply of Mneme NFTs
     access(all) var totalSupply: UInt64
-    // Track of total amount of Artists on Mneme
     access(all) var totalArtist: UInt64
-    // Track of total amount of Pieces on Mneme
     access(all) var totalPieces: UInt64
+    access(all) var totalPrintBlueprints: Int64
     // -----------------------------------------------------------------------
     // Mneme Entitlements
     // ----------------------------------------------------------------------- 
     access(all) entitlement AddArtist
     access(all) entitlement AddPiece
+    access(all) entitlement CreatePrint
+    access(all) entitlement MintPrint
     access(all) entitlement AddCertificate
     access(all) entitlement UpdateOwner
     access(all) entitlement UpdateSentiment
-    access(all) entitlement MintPrint
     access(all) entitlement StorePrint
     access(all) entitlement ClaimStatus
     access(all) entitlement DeliverPrint
@@ -90,7 +90,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     // Storage resource for Prints yet to be claimed
     access(all) resource PrintsRecord {
-        access(account) let prints: {String: {UInt64: Address}}
+        access(account) let prints: {String: Print}
 
         init() {
             self.prints = {}
@@ -100,7 +100,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             pre {
                 self.prints[XUID] == nil: "There's already a print with this XUID"
             }
-            self.prints[XUID] = {id: address}
+            self.prints[XUID] = Print(XUID: XUID, id: id, address: address)
         }
 
         access(contract) fun getPrint(XUID: String): {UInt64: Address} {
@@ -744,6 +744,39 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.purchases = newCount
         }
     }
+
+    // Print Struct to keep record of owner and serials and unique features
+    access(all) struct Print {
+        access(all) let id: Int64
+        access(all) let pieceId: UInt64
+        access(all) let printDimensions: String
+        access(all) let printMedium: String
+        access(all) let image: String
+        access(all) var totalSupply: Int64
+        access(all) var extra: AnyStruct?
+
+
+        init(
+        id: Int64,
+        pieceId: UInt64,
+        printDimensions: String,
+        printMedium: String,
+        image: String,
+        extra: AnyStruct?
+        ) {
+            self.id = id
+            self.pieceId = pieceId
+            self.printDimensions = printDimensions
+            self.printMedium = printMedium
+            self.image = image
+            self.totalSupply = 0
+            self.extra = extra
+        }
+
+        access(all) fun incrementTotalSupply() {
+            self.totalSupply = self.totalSupply + 1
+        }
+    } 
     // Pistis (Πίστις) is not a goddess in the traditional Olympian sense
     // but rather a personified spirit (daimona) representing:
     // Good Faith, Trust, Loyalty and Reliability
@@ -873,36 +906,42 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
 	access(all) resource NFT: NonFungibleToken.NFT {
         access(all) let id: UInt64
-        access(all) let XUID: String
+        access(all) let artistName: String // Certificate 1
         access(all) let pieceTitle: String
+        access(all) let serial: UInt64
+        access(all) let XUID: String
         access(all) let pieceId: UInt64
         access(all) let description: String
-        access(all) let artistName: String
         access(all) let artistAddress: Address
         access(all) let image: String
+        access(all) let studio: String
         access(all) var claimed: Bool
         access(all) var toBeClaimedBy: Address
 
 
         init(
-            XUID: String,
-            pieceTitle: String,
-            pieceId: UInt64,
             artistName: String,
+            pieceTitle: String,
+            serial: UInt64,
+            XUID: String,
+            pieceId: UInt64,
             artistAddress: Address,
             description: String,
             image: String,
+            studio: String,
             toBeClaimedBy: Address) {
             // Increment the global Cards IDs
             Mneme.totalSupply = Mneme.totalSupply + 1
             self.id = Mneme.totalSupply
-            self.XUID = XUID
-            self.pieceTitle = pieceTitle
-            self.pieceId = pieceId
             self.artistName = artistName
+            self.pieceTitle = pieceTitle
+            self.serial = serial
+            self.XUID = XUID
+            self.pieceId = pieceId
             self.artistAddress = artistAddress
             self.description = description
             self.image = image
+            self.studio = studio
             self.claimed = false
             self.toBeClaimedBy = toBeClaimedBy
         }
@@ -924,7 +963,9 @@ contract Mneme: NonFungibleToken, ViewResolver {
             return self.claimed
         }
         access(all) fun getMetadata(): MetadataViews.Traits? {
+            // I need to return this NFT's XUID as part of the metadata
             let metadata = Mneme.getPieceTraits(id: self.id, artistAddress: self.artistAddress)
+            
             return metadata
         }
         // Get currentOwner
@@ -1136,7 +1177,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         //
         // Returns: the ID of the new Piece object
         //
-        access(all) fun createPiece(
+        access(AddPiece) fun addPiece(
             title: String,
             description: String,
             artistName: String,
@@ -1173,8 +1214,38 @@ contract Mneme: NonFungibleToken, ViewResolver {
 
             // return newID
         } 
+        // createPrint creates a new Print struct 
+        // and stores it in the Prints dictionary inside the Artist's dictionary
+        //
+        // Returns: the ID of the new Print object
+        //
         // updateViews and other functions update the
-        // sentiment track for a particular piece
+        // sentiment track for a particular print
+        access(CreatePrint) fun createPrint(
+            pieceId: UInt64,
+            printDimensions: String,
+            printMedium: String,
+            image: String,
+            extra: AnyStruct?
+            ) {
+            // Increase total prints    
+            Mneme.totalPrintBlueprints = Mneme.totalPrintBlueprints + 1
+            // Create new struct
+            let newPrint = Print(
+                id: Mneme.totalPrintBlueprints,
+                pieceId: pieceId,
+                printDimensions: printDimensions,
+                printMedium: printMedium,
+                image: image,
+                extra: extra
+                )
+
+            // Get the ArtDrop resource
+            let storage = Mneme.account.storage.borrow<auth(CreatePrint) &Mneme.ArtDrop>(from: Mneme.ArtDropPath)!
+
+
+            // borrow ArtDrop from Account
+        }
         access(UpdateSentiment) fun updateSentiment(
             pieceID: UInt64,
             artistAddress: Address,
@@ -1188,12 +1259,13 @@ contract Mneme: NonFungibleToken, ViewResolver {
         } 
         // Mint Print NFT
          access(MintPrint) fun mintPrint(
-            XUID: String,
-            pieceName: String,
-            pieceId: UInt64,
+            printId: UInt64,
+            pieceTitle: String,
             artistAddress: Address,
-            paidPrice: UFix64,
             description: String,
+            XUID: String,
+            pieceId: UInt64,
+            paidPrice: UFix64,
             image: String,
             toBeClaimedBy: Address) {
             pre {
@@ -1201,14 +1273,14 @@ contract Mneme: NonFungibleToken, ViewResolver {
             }
 
             // Add XUID to the PrintsRecord
-            let storage = Mneme.account.storage.borrow<auth(MintPrint) &Mneme.PrintsRecord>(from: Mneme.PrintsRecordStoragePath)!
+/*             let storage = Mneme.account.storage.borrow<auth(MintPrint) &Mneme.PrintsRecord>(from: Mneme.PrintsRecordStoragePath)!
             // If this function fails, then the XUID is already in the PrintsRecord
             storage.addPrint(XUID: XUID, id: pieceId, address: toBeClaimedBy)
             // Create NFT
             // NEED TO DO SOMETHING WITH PAID PRICE
             let nft <- create NFT(
                 XUID: XUID,
-                pieceTitle: pieceName,
+                pieceTitle: pieceTitle,
                 pieceId: pieceId,
                 artistName: Mneme.artists[artistAddress]!,
                 artistAddress: artistAddress,
@@ -1223,7 +1295,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
             let artistCollection = artistAccount.capabilities.borrow<&{NonFungibleToken.Receiver}>(Mneme.CollectionPublicPath)!
             artistCollection.deposit(token: <- nft)
             // emit event   
-            emit PrintMinted(id: id, xuid: XUID, pieceId: pieceId, toBeClaimedBy: toBeClaimedBy)
+            emit PrintMinted(id: id, xuid: XUID, pieceId: pieceId, toBeClaimedBy: toBeClaimedBy) */
         }  
         // Helper function to create the community pool
           access(self) fun createCommunityPool(artistAddress: Address) {
@@ -1348,7 +1420,7 @@ contract Mneme: NonFungibleToken, ViewResolver {
         } */
         // get artist address from PrintsRecord
         let storage = Mneme.account.storage.borrow<&Mneme.PrintsRecord>(from: Mneme.PrintsRecordStoragePath)!
-        let print = storage.getPrint(XUID: xuid)
+        let print = storage.getPrint(xuid: xuid)
         let account = getAccount(print.values[0]) 
         let cap = account.capabilities.borrow<&Mneme.Collection>(Mneme.CollectionPublicPath)!
         let resolver = cap.borrowViewResolver(id: print.keys[0])!
@@ -1430,10 +1502,11 @@ contract Mneme: NonFungibleToken, ViewResolver {
         self.collectionInfo = {}
         self.artists = {}
         self.pieces = {}
-       // self.prints = {}
+
         self.totalSupply = 0
         self.totalArtist = 0
         self.totalPieces = 0
+        self.totalPrintBlueprints = 0
 
         let identifier = "Mneme_\(self.account.address))"
         // Set the named paths

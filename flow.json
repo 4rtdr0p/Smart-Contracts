@@ -5,6 +5,24 @@
 			"aliases": {
 				"testnet": "12ecc177508efad8"
 			}
+		},
+		"Pistis": {
+			"source": "contracts/Pistis.cdc",
+			"aliases": {
+				"testnet": "12ecc177508efad8"
+			}
+		},
+		"ExampleToken": {
+			"source": "contracts/ExampleFT.cdc",
+			"aliases": {
+				"testnet": "12ecc177508efad8"
+			}
+		},
+		"ExampleNFT": {
+			"source": "contracts/ExampleNFT.cdc",
+			"aliases": {
+				"testnet": "12ecc177508efad8"
+			}
 		}
 	},
 	"dependencies": {
@@ -102,7 +120,10 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
-				"Mneme"
+				"Mneme",
+				"Pistis",
+				"ExampleToken",
+				"ExampleNFT"
 			],
 			"emulator-bob": []
 		},

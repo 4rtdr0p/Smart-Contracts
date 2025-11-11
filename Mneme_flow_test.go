@@ -22,7 +22,7 @@ func TestFullFlow(t *testing.T) {
 	color.Green("GREEN transactions are meant to SUCCEED")
 	color.Red("Red transactions are meant to FAIL")
 	// initialize the contract and setups
-	color.Green("Bob account setup to Arsenal")
+	color.Green("Bob account setup to Mneme")
 	o.Tx("Mneme/setup",
 		WithSigner("bob"),
 	).AssertSuccess(t).Print()
@@ -61,9 +61,9 @@ func TestFullFlow(t *testing.T) {
 		WithArg("communityRoyalties", "0.5"),
 		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
 	).AssertFailure(t, "There's already an artist with this account address.").Print()
-	// Create a new Piece blueprint
-	color.Green("Admin creates piece Blueprint under Artist")
-	pieceId, error := o.Tx("Mneme/admin/create_piece_blueprint",
+	// Create a new Edition blueprint
+	color.Green("Admin creates Edition blueprint under Artist")
+	pieceId, error := o.Tx("Mneme/admin/create_edition_blueprint",
 		WithSigner("account"),
 		WithArg("title", "Sunflowers"),
 		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
@@ -81,14 +81,14 @@ func TestFullFlow(t *testing.T) {
 		WithArg("encodedImg", "https://www.johndoe.com/images/sunflowers.jpg"),
 	).AssertSuccess(t).Print().GetIdFromEvent("PieceCreated", "id")
 	fmt.Println(error, pieceId)
-	// Get Piece
-	o.Script("get_piece",
+	// Get Edition
+	o.Script("get_edition",
 		WithArg("id", pieceId),
 		WithArg("artistName", "John Doe"),
 	)
-	// FAILED Create Piece with same title under same artist
-	color.Red("Admin creates a Piece with the same title under same artist and it should fail")
-	o.Tx("Mneme/admin/create_piece_blueprint",
+	// FAILED Create Edition with same title under same artist
+	color.Red("Admin creates a Edition with the same title under same artist and it should fail")
+	o.Tx("Mneme/admin/create_edition_blueprint",
 		WithSigner("account"),
 		WithArg("title", "Sunflowers"),
 		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
@@ -104,7 +104,7 @@ func TestFullFlow(t *testing.T) {
 		WithArg("acquisitionDetails", "N/A"),
 		WithArg("price", "844.0"),
 		WithArg("encodedImg", "https://www.johndoe.com/images/sunflowers.jpg"),
-	).AssertFailure(t, `There's already a piece with this title`).Print()
+	).AssertFailure(t, `There's already a piece with this id`).Print()
 	// Mint a new Print
 	color.Green("Admin mints a new Print")
 	events := o.Tx("Mneme/admin/mint_print",
