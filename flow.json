@@ -120,7 +120,6 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
-				"Mneme",
 				"Pistis",
 				"ExampleToken",
 				"ExampleNFT"
