@@ -34,16 +34,20 @@ import "ExampleToken"
 access(all) 
 contract interface Pistis {
 
+    access(all) entitlement Withdraw
+
     access(all) resource interface Pool {
         access(all) var vaultsDict: @{Type: {FungibleToken.Vault}}
+        // store the vault receiver reference
+        access(all) var vaultReceiverPath: {Type: PublicPath}
 
-        access(all) fun addVault(vaultType: Type, vault: @{FungibleToken.Vault}) {
+        access(all) fun addVault(vaultType: Type, vault: @{FungibleToken.Vault}, vaultReceiverPath: PublicPath) {
             pre {
                 vaultType.isSubtype(of: Type<@{FungibleToken.Vault}>()) == true: "Type is not a subtype of FungibleToken.Vault"
             }
 
             let oldVault <- self.vaultsDict[vaultType] <- vault
-
+            self.vaultReceiverPath[vaultType] = vaultReceiverPath
             destroy oldVault
         }
 
@@ -51,6 +55,30 @@ contract interface Pistis {
 
             return self.vaultsDict.keys
         }
-    }
 
+        // function to deposit 
+        access(all) fun depositToVault( vaultType: Type, vaultDeposit: @{FungibleToken.Vault}) {
+            pre {
+                self.vaultsDict[vaultType] != nil: "There's no vault of this type"
+            }
+            let vault <- self.vaultsDict.remove(key: vaultType)!
+            vault.deposit(from: <- vaultDeposit.withdraw(amount: vaultDeposit.balance))
+            self.vaultsDict[vaultType] <-! vault 
+
+            destroy vaultDeposit
+        }
+
+        access(Withdraw) fun withdrawFungibleToken(vaultType: Type) {
+            pre {
+                self.vaultsDict[vaultType] != nil: "There's no vault of this type"
+            }
+
+            let oldVault <- self.vaultsDict.remove(key: vaultType)!
+            let vaultReceiverPath = self.vaultReceiverPath[vaultType]!
+            let vaultReceiverRef = getAccount(self.owner!.address).capabilities.borrow<&{FungibleToken.Receiver}>(vaultReceiverPath)!
+            vaultReceiverRef.deposit(from: <- oldVault.withdraw(amount: oldVault.balance))
+            // return the old vault to the dictionary
+            self.vaultsDict[vaultType] <-! oldVault
+        } 
+    }
 }

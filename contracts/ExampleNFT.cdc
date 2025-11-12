@@ -45,7 +45,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
     /// because the interface does not require it to have a specific name any more
     access(all) resource NFT: NonFungibleToken.NFT, Pistis.Pool {
         access(all) var vaultsDict: @{Type: {FungibleToken.Vault}}
-
+        access(all) var vaultReceiverPath: {Type: PublicPath}
         access(all) let id: UInt64
         access(all) let name: String
         access(all) let description: String
@@ -71,6 +71,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
                 )
             self.metadata = metadata
             self.vaultsDict <- {}
+            self.vaultReceiverPath = {}
         }
 
 
@@ -216,10 +217,16 @@ access(all) contract ExampleNFT: NonFungibleToken {
             self.ownedNFTs <- {}
         }
 
-        access(all) fun addVault(vaultType: Type, vault: @{FungibleToken.Vault}, id: UInt64) {
+        access(all) fun addVault(vaultType: Type, vault: @{FungibleToken.Vault}, id: UInt64, vaultReceiverPath: PublicPath) {
             let nft <- self.ownedNFTs.remove(key: id) as! @ExampleNFT.NFT
-            nft.addVault(vaultType: vaultType, vault: <- vault)
-            self.ownedNFTs[id] <-! nft
+            nft.addVault(vaultType: vaultType, vault: <- vault, vaultReceiverPath: vaultReceiverPath)
+            self.ownedNFTs[id] <-! nft 
+        } 
+
+        access(all) fun depositToVault(id: UInt64, vaultType: Type, vaultDeposit: @{FungibleToken.Vault}) {
+            let nft <- self.ownedNFTs.remove(key: id) as! @ExampleNFT.NFT
+            nft.depositToVault(vaultType: vaultType, vaultDeposit: <- vaultDeposit)
+            self.ownedNFTs[id] <-! nft 
         }
 
         /// getSupportedNFTTypes returns a list of NFT types that this receiver accepts

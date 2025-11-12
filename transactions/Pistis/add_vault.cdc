@@ -1,13 +1,21 @@
-import "ExampleNFT"
+import "ExampleNFT" 
 import "FungibleToken"
 import "FlowToken"
 
 transaction() {
-    prepare(signer: auth(BorrowValue) &Account) { 
+    let vaultReceiverRef: Capability<&{FungibleToken.Receiver}>
+
+    prepare(signer: auth(BorrowValue, IssueStorageCapabilityController) &Account) { 
+        // get the FlowToken Receiver reference Capability
+        self.vaultReceiverRef = signer.capabilities.storage.issue<&{FungibleToken.Receiver}>(StoragePath(identifier: "/public/flowTokenReceiver")!)
+
+        // get the collection reference
         let collectionRef: &ExampleNFT.Collection = signer.storage.borrow<&ExampleNFT.Collection>(from: ExampleNFT.CollectionStoragePath)!
+        // get the first ID
         let id = collectionRef.getIDs()[0]
+        // create a new FlowToken Vault
         let newVault <- FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
-        collectionRef.addVault(vaultType: Type<@FlowToken.Vault>(), vault: <- newVault, id: id) 
+        collectionRef.addVault(vaultType: Type<@FlowToken.Vault>(), vault: <- newVault, id: id, vaultReceiverPath: /public/flowTokenReceiver)  
     }
-    
 } 
+  

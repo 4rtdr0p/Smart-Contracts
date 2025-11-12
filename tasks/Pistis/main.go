@@ -40,4 +40,12 @@ func main() {
 		WithArg("address", "account"),
 	)
 
+	// Deposit to the vault
+	o.Tx("Pistis/deposit_to_vault",
+		WithSigner("bob"),
+		WithArg("amount", "5.0"),
+		WithArg("id", "1"),
+		WithArg("account", "account"),
+	)
+
 }
