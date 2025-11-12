@@ -40,6 +40,10 @@ func main() {
 		WithArg("address", "account"),
 	)
 
+	o.Script("Pistis/get_vault_balance",
+		WithArg("address", "account"),
+	)
+
 	// Deposit to the vault
 	o.Tx("Pistis/deposit_to_vault",
 		WithSigner("bob"),
@@ -48,4 +52,7 @@ func main() {
 		WithArg("account", "account"),
 	)
 
+	o.Script("Pistis/get_vault_balance",
+		WithArg("address", "account"),
+	)
 }
