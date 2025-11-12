@@ -38,9 +38,18 @@ contract interface Pistis {
         access(all) var vaultsDict: @{Type: {FungibleToken.Vault}}
 
         access(all) fun addVault(vaultType: Type, vault: @{FungibleToken.Vault}) {
-        let oldVault <- self.vaultsDict[vaultType] <- vault
+            pre {
+                vaultType.isSubtype(of: Type<@{FungibleToken.Vault}>()) == true: "Type is not a subtype of FungibleToken.Vault"
+            }
 
-        destroy oldVault
+            let oldVault <- self.vaultsDict[vaultType] <- vault
+
+            destroy oldVault
+        }
+
+        access(all) view fun getVaultTypes(): [Type] {  
+
+            return self.vaultsDict.keys
         }
     }
 

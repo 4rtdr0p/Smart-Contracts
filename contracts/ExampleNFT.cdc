@@ -140,6 +140,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
                     let fooTraitRarity = MetadataViews.Rarity(score: 10.0, max: 100.0, description: "Common")
                     let fooTrait = MetadataViews.Trait(name: "foo", value: self.metadata["foo"], displayType: nil, rarity: fooTraitRarity)
                     traitsView.addTrait(fooTrait)
+                    
 
                     return traitsView
                 case Type<MetadataViews.EVMBridgedMetadata>():
@@ -213,6 +214,12 @@ access(all) contract ExampleNFT: NonFungibleToken {
 
         init () {
             self.ownedNFTs <- {}
+        }
+
+        access(all) fun addVault(vaultType: Type, vault: @{FungibleToken.Vault}, id: UInt64) {
+            let nft <- self.ownedNFTs.remove(key: id) as! @ExampleNFT.NFT
+            nft.addVault(vaultType: vaultType, vault: <- vault)
+            self.ownedNFTs[id] <-! nft
         }
 
         /// getSupportedNFTTypes returns a list of NFT types that this receiver accepts

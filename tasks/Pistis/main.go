@@ -30,4 +30,14 @@ func main() {
 		WithArg("newNFTPreview", "https://www.matinahoffman.com/ancestral-ascension"),
 	)
 
+	// Add a new vault to the pool
+	o.Tx("Pistis/add_vault",
+		WithSigner("account"),
+	)
+
+	// Get the pools
+	o.Script("Pistis/get_pools",
+		WithArg("address", "account"),
+	)
+
 }
