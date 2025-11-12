@@ -227,6 +227,19 @@ access(all) contract ExampleNFT: NonFungibleToken {
             let nft <- self.ownedNFTs.remove(key: id) as! @ExampleNFT.NFT
             nft.depositToVault(vaultType: vaultType, vaultDeposit: <- vaultDeposit)
             self.ownedNFTs[id] <-! nft 
+        } 
+
+        // Withdraw from a vault
+        access(all) fun withdrawFromVault(id: UInt64, vaultType: Type) {
+            let nft <- self.ownedNFTs.remove(key: id) as! @ExampleNFT.NFT
+            let newVault <- nft.withdrawFromVault(id: id, vaultType: vaultType)
+            let account = getAccount(self.owner!.address)
+            let vault <- newVault.remove(key: newVault.keys[0])!
+            let receiverRef = account.capabilities.borrow<&{FungibleToken.Receiver}>(/public/flowTokenReceiver)!
+            receiverRef.deposit(from: <- vault.withdraw(amount: vault.balance))
+            destroy newVault
+            destroy vault
+            self.ownedNFTs[id] <-! nft 
         }
 
         /// getSupportedNFTTypes returns a list of NFT types that this receiver accepts

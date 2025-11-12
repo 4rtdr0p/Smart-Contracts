@@ -55,4 +55,12 @@ func main() {
 	o.Script("Pistis/get_vault_balance",
 		WithArg("address", "account"),
 	)
+
+	o.Tx("Pistis/withdraw_flowtoken",
+		WithSigner("account"),
+	)
+
+	o.Script("Pistis/get_vault_balance",
+		WithArg("address", "account"),
+	)
 }

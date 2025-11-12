@@ -68,17 +68,20 @@ contract interface Pistis {
             destroy vaultDeposit
         }
 
-        access(Withdraw) fun withdrawFungibleToken(vaultType: Type) {
+        access(all) fun withdrawFromVault(id: UInt64, vaultType: Type): @{PublicPath: {FungibleToken.Vault}} {
             pre {
                 self.vaultsDict[vaultType] != nil: "There's no vault of this type"
             }
 
             let oldVault <- self.vaultsDict.remove(key: vaultType)!
-            let vaultReceiverPath = self.vaultReceiverPath[vaultType]!
-            let vaultReceiverRef = getAccount(self.owner!.address).capabilities.borrow<&{FungibleToken.Receiver}>(vaultReceiverPath)!
-            vaultReceiverRef.deposit(from: <- oldVault.withdraw(amount: oldVault.balance))
+
+            let newVault <- oldVault.withdraw(amount: oldVault.balance)
             // return the old vault to the dictionary
             self.vaultsDict[vaultType] <-! oldVault
+            let result: @{PublicPath: {FungibleToken.Vault}} <- {}
+            result[self.vaultReceiverPath[vaultType]!] <-! newVault
+
+            return <- result
         } 
     }
 }
