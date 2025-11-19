@@ -34,7 +34,38 @@ import "ExampleToken"
 access(all) 
 contract interface Pistis {
 
-    access(all) entitlement Withdraw
+  //  access(all) entitlement Withdraw
+
+    /**
+     * The Pool is a resource that holds a dictionary of vaults
+     * and a dictionary of vault receiver paths
+     * it also has a function to add a vault to the dictionary
+     * and a function to deposit to a vault
+     * and a function to withdraw from a vault
+     */
+
+    access(all) resource interface Loyalty {
+        access(all) var loyaltyPoints: {Address: UFix64}
+        
+        access(all) fun addLoyalty(address: Address, loyaltyPoints: UFix64) {
+            self.loyaltyPoints[address] = self.loyaltyPoints[address]! + loyaltyPoints
+        }
+
+        access(all) fun substractLoyalty(address: Address, loyaltyPoints: UFix64) {
+            self.loyaltyPoints[address] = self.loyaltyPoints[address]! - loyaltyPoints
+        }
+
+        access(all) fun getLoyalty(address: Address): UFix64 {
+            return self.loyaltyPoints[address]!
+        }
+        
+        access(all) fun getLoyaltyPoints(): {Address: UFix64} {
+            return self.loyaltyPoints
+        }
+        
+
+    }
+
 
     access(all) resource interface Pool {
         access(all) var vaultsDict: @{Type: {FungibleToken.Vault}}
@@ -83,5 +114,6 @@ contract interface Pistis {
 
             return <- result
         } 
-    }
+    } 
+
 }

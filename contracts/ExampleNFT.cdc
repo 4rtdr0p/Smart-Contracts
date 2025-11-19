@@ -49,10 +49,10 @@ access(all) contract ExampleNFT: NonFungibleToken {
         access(all) let id: UInt64
         access(all) let name: String
         access(all) let description: String
-        access(all) let thumbnail: String
+        access(all) let thumbnail: String 
         access(all) let royalties: MetadataViews.Royalty
         access(all) let metadata: {String: AnyStruct}
-
+        
         init(
             id: UInt64,
             name: String,
@@ -80,6 +80,8 @@ access(all) contract ExampleNFT: NonFungibleToken {
         /// @{NonFungibleToken.Collection}
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
             return <-ExampleNFT.createEmptyCollection(nftType: Type<@ExampleNFT.NFT>())
+
+            
         }
 
         access(all) view fun getViews(): [Type] {
@@ -208,13 +210,16 @@ access(all) contract ExampleNFT: NonFungibleToken {
     // Deprecated: Only here for backward compatibility.
     access(all) resource interface ExampleNFTCollectionPublic {}
 
-    access(all) resource Collection: NonFungibleToken.Collection, ExampleNFTCollectionPublic {
+    access(all) resource Collection: NonFungibleToken.Collection, Pistis.Loyalty, ExampleNFTCollectionPublic {
         /// dictionary of NFT conforming tokens
         /// NFT is a resource type with an `UInt64` ID field
         access(all) var ownedNFTs: @{UInt64: {NonFungibleToken.NFT}}
+        access(all) var loyaltyPoints: {Address: UFix64}
 
         init () {
             self.ownedNFTs <- {}
+            self.loyaltyPoints = {}
+            self.loyaltyPoints[ExampleNFT.account.address] = 0.0
         }
 
         access(all) fun addVault(vaultType: Type, vault: @{FungibleToken.Vault}, id: UInt64, vaultReceiverPath: PublicPath) {
@@ -262,6 +267,10 @@ access(all) contract ExampleNFT: NonFungibleToken {
                         .concat(withdrawID.toString())
                         .concat(". Check the submitted ID to make sure it is one that this collection owns."))
 
+            // Based on NFT's edition and other factors, substract loyalty points from the collector
+            let collectorLoyalty = self.owner!.capabilities.borrow<&ExampleNFT.Collection>(ExampleNFT.CollectionPublicPath)!
+            collectorLoyalty.substractLoyalty(address: ExampleNFT.account.address, loyaltyPoints: 1.0)
+
             return <-token
         }
 
@@ -270,6 +279,10 @@ access(all) contract ExampleNFT: NonFungibleToken {
         access(all) fun deposit(token: @{NonFungibleToken.NFT}) {
             let token <- token as! @ExampleNFT.NFT
             let id = token.id
+
+            // Based on NFT's edition and other factors, add loyalty points to the collector
+            let collectorLoyalty = self.owner!.capabilities.borrow<&ExampleNFT.Collection>(ExampleNFT.CollectionPublicPath)!
+            collectorLoyalty.addLoyalty(address: ExampleNFT.account.address, loyaltyPoints: 1.0)
 
             // add the new token to the dictionary which removes the old one
             let oldToken <- self.ownedNFTs[token.id] <- token

@@ -56,6 +56,10 @@ func main() {
 		WithArg("address", "account"),
 	)
 
+	o.Script("get_flow_balance",
+		WithArg("address", "account"),
+	)
+
 	o.Tx("Pistis/withdraw_flowtoken",
 		WithSigner("account"),
 	)
@@ -63,4 +67,14 @@ func main() {
 	o.Script("Pistis/get_vault_balance",
 		WithArg("address", "account"),
 	)
+
+	o.Script("get_flow_balance",
+		WithArg("address", "account"),
+	)
+
+	o.Script("Pistis/get_collection_loyalty",
+		WithArg("address", "account"),
+	)
+
+	// Schedule a deposit
 }
