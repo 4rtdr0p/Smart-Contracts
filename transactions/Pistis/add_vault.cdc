@@ -1,4 +1,4 @@
-import "ExampleNFT" 
+import "ArtDrop" 
 import "FungibleToken"
 import "FlowToken"
 
@@ -10,7 +10,7 @@ transaction() {
         self.vaultReceiverRef = signer.capabilities.storage.issue<&{FungibleToken.Receiver}>(StoragePath(identifier: "/public/flowTokenReceiver")!)
 
         // get the collection reference
-        let collectionRef: &ExampleNFT.Collection = signer.storage.borrow<&ExampleNFT.Collection>(from: ExampleNFT.CollectionStoragePath)!
+        let collectionRef: &ArtDrop.Collection = signer.storage.borrow<&ArtDrop.Collection>(from: ArtDrop.CollectionStoragePath)!
         // get the first ID
         let id = collectionRef.getIDs()[0]
         // create a new FlowToken Vault

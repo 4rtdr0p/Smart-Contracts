@@ -51,12 +51,12 @@ contract Mneme: NonFungibleToken, ViewResolver {
     // -----------------------------------------------------------------------
     // The Edition resource represents the Art's metadata
     // it serves as a blueprint from which NFTs can be minted
-    access(all) resource Edition {
+     access(all) resource Edition {
         access(all) let id: UInt64
         access(all) let title: String
         access(all) let description: String
         access(all) let image: String
-        access(all) let sentimentTrack: Sentiment
+        // access(all) let sentimentTrack: Sentiment
         access(all) var extra: {String: AnyStruct}
         access(all) var proofs: @{UInt64: Proof}
 
@@ -72,44 +72,17 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.description = description
             self.image = image
             self.id = Mneme.totalEditions
-            self.sentimentTrack = Sentiment()
+            // self.sentimentTrack = Sentiment()
             self.extra = {}
             self.proofs <- {}
         }
-        access(all) fun updateSentiment(
-            _ newViewsCount: Int64,
-            _ newLikesCount: Int64,
-            _ newSharesCount: Int64,
-            _ newPurchasesCount: Int64
-        ) {
-            pre {
-                self.sentimentTrack.views <= newViewsCount: "The new Views count has to be equal or higher than the current count"
-                self.sentimentTrack.likes <= newLikesCount: "The new Likes count has to be equal or higher than the current count"
-                self.sentimentTrack.shares <= newSharesCount: "The new Shares count has to be equal or higher than the current count"
-                self.sentimentTrack.purchases <= newPurchasesCount: "The new Purchases count has to be equal or higher than the current count"
-            }
-            self.sentimentTrack.views = newViewsCount
-            self.sentimentTrack.likes = newLikesCount
-            self.sentimentTrack.shares = newSharesCount
-            self.sentimentTrack.purchases = newPurchasesCount
 
-            // Emit Event
-        }
-        access(all) fun createProof(
-            _ printingDetails: {String: AnyStruct},
-            _ image: String
-        ) {
-            let proof <- create Proof(self.id, printingDetails, image)
-            let id = proof.id
-            self.proofs[id] <-! proof
-            // Emit Event
-            emit ProofCreated(id: id, pieceId: self.id, printingDetails: printingDetails)
-        }
-    }
+
+    } 
     // -----------------------------------------------------------------------
     // Print resource represents each different variant ArtDrop has for sale 
     // for a particular 
-    access(all) resource Print {
+/*     access(all) resource Print {
         access(all) let id: UInt64
         access(all) let editionId: UInt64
         access(all) let printingDetails: {String: AnyStruct}
@@ -155,67 +128,8 @@ contract Mneme: NonFungibleToken, ViewResolver {
             self.shares = newSharesCount
             self.purchases = newPurchasesCount
         }
-    }
+    } */
 
-
-    // Sentiment struct serves to track feedback on a Piece
-    access(all) struct Sentiment {
-        access(all) var views: Int64
-        access(all) var likes: Int64
-        access(all) var shares: Int64
-        access(all) var purchases: Int64
-
-        init() {
-            self.views = 0
-            self.likes = 0
-            self.shares = 0
-            self.purchases = 0
-        }
-        // Functionality around updating a Piece's sentiment
-        access(all)
-        fun updateSentiment(
-            _ newViewsCount: Int64,
-            _ newLikesCount: Int64,
-            _ newSharesCount: Int64,
-            _ newPurchasesCount: Int64
-        ) {
-            pre {
-                self.views <= newViewsCount: "The new Views count has to be equal or higher than the current count"
-                self.likes <= newLikesCount: "The new Likes count has to be equal or higher than the current count"
-                self.shares <= newSharesCount: "The new Shares count has to be equal or higher than the current count"
-                self.purchases <= newPurchasesCount: "The new Purchases count has to be equal or higher than the current count"
-            }
-
-            self.views = newViewsCount
-            self.likes = newLikesCount
-            self.shares = newSharesCount
-            self.purchases = newPurchasesCount
-        }
-        access(all) fun updateViews(newCount:  Int64) {
-            pre {
-                self.views < newCount: "New count cannot be lower that current count"
-            }
-            self.views = newCount
-        }
-        access(all) fun updateLikes(newCount:  Int64) {
-            pre {
-                self.likes < newCount: "New count cannot be lower that current count"
-            }
-            self.likes = newCount
-        }
-        access(all) fun updateShares(newCount:  Int64) {
-            pre {
-                self.shares < newCount: "New count cannot be lower that current count"
-            }
-            self.shares = newCount
-        }
-        access(all) fun updatePurchases(newCount:  Int64) {
-            pre {
-                self.purchases < newCount: "New count cannot be lower that current count"
-            }
-            self.purchases = newCount
-        }
-    }
     // Resource for Artist's metadata
     access(all) resource ArtDropVault {
         // Unique ID for artist

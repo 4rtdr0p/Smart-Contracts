@@ -1,4 +1,4 @@
-import "ExampleNFT" 
+import "ArtDrop" 
 import "FungibleToken"
 import "FlowToken"
 
@@ -12,7 +12,7 @@ transaction(account: Address, amount: UFix64, id: UInt64) {
                     .concat(". The signer must initialize their account with this vault first!"))
 
 
-        let collectionRef: &ExampleNFT.Collection = getAccount(account).capabilities.borrow<&ExampleNFT.Collection>(ExampleNFT.CollectionPublicPath)!
+        let collectionRef: &ArtDrop.Collection = getAccount(account).capabilities.borrow<&ArtDrop.Collection>(ArtDrop.CollectionPublicPath)!
         
         
         collectionRef.depositToVault(id: id, vaultType: Type<@FlowToken.Vault>(), vaultDeposit: <- vaultRef.withdraw(amount: amount))

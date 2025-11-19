@@ -1,5 +1,5 @@
 import "Pistis"
-import "ExampleNFT"
+import "ArtDrop"
 import "NonFungibleToken"
 import "MetadataViews"
 
@@ -18,8 +18,8 @@ transaction(
     let recipientCollectionRef: &{NonFungibleToken.Receiver}
 
     prepare(signer:auth(BorrowValue) &Account) {
-        let collectionData = ExampleNFT.resolveContractView(resourceType: nil, viewType: Type<MetadataViews.NFTCollectionData>()) as! MetadataViews.NFTCollectionData?
-            ?? panic("Could not resolve NFTCollectionData view. The ExampleNFT contract needs to implement the NFTCollectionData Metadata view in order to execute this transaction")
+        let collectionData = ArtDrop.resolveContractView(resourceType: nil, viewType: Type<MetadataViews.NFTCollectionData>()) as! MetadataViews.NFTCollectionData?
+            ?? panic("Could not resolve NFTCollectionData view. The ArtDrop contract needs to implement the NFTCollectionData Metadata view in order to execute this transaction")
 
         // Borrow the recipient's public NFT collection reference
         self.recipientCollectionRef = getAccount(signer.address).capabilities.borrow<&{NonFungibleToken.Receiver}>(collectionData.publicPath)
@@ -31,7 +31,7 @@ transaction(
     }
     execute {   
 
-        let newNFT <- ExampleNFT.mintNFT(name: newNFTName, description: newNFTDescription, thumbnail: newNFTPreview)
+        let newNFT <- ArtDrop.mintNFT(name: newNFTName, description: newNFTDescription, thumbnail: newNFTPreview)
         self.recipientCollectionRef.deposit(token: <- newNFT)
 
     }

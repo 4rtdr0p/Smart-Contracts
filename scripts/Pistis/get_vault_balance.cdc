@@ -1,6 +1,6 @@
 import "FlowToken"
 import "NonFungibleToken"
-import "ExampleNFT"
+import "ArtDrop"
 
 
 access(all)
@@ -9,9 +9,9 @@ let metadata: {String: AnyStruct} = {}
 
 
     let account = getAccount(address)
-    let collectionRef = account.capabilities.borrow<&ExampleNFT.Collection>(ExampleNFT.CollectionPublicPath)!
+    let collectionRef = account.capabilities.borrow<&ArtDrop.Collection>(ArtDrop.CollectionPublicPath)!
     let id = collectionRef.getIDs()[0]
-    let nftRef = collectionRef.borrowNFT(id)! as! &ExampleNFT.NFT
+    let nftRef = collectionRef.borrowNFT(id)! as! &ArtDrop.NFT
     metadata["balance"] = nftRef.vaultsDict[Type<@FlowToken.Vault>()]!.balance
 
     return metadata

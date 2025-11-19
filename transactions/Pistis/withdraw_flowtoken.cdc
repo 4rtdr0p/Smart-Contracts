@@ -1,4 +1,4 @@
-import "ExampleNFT"  
+import "ArtDrop"  
 import "FungibleToken"
 import "FlowToken"
 
@@ -7,7 +7,7 @@ transaction() {
     prepare(signer: auth(BorrowValue, IssueStorageCapabilityController) &Account) { 
 
         // get the collection reference
-        let collectionRef: &ExampleNFT.Collection = signer.storage.borrow<&ExampleNFT.Collection>(from: ExampleNFT.CollectionStoragePath)!
+        let collectionRef: &ArtDrop.Collection = signer.storage.borrow<&ArtDrop.Collection>(from: ArtDrop.CollectionStoragePath)!
         // get the first ID
         let id = collectionRef.getIDs()[0]
         

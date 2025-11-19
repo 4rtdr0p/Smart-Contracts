@@ -1,4 +1,4 @@
-import "ExampleNFT" 
+import "ArtDrop" 
 import "NonFungibleToken"
 import "MetadataViews"
 
@@ -7,7 +7,7 @@ import "MetadataViews"
 
 access(all) fun main(address: Address): &{Address: UFix64} {
     let account = getAccount(address)
-    let collectionRef = account.capabilities.borrow<&ExampleNFT.Collection>(ExampleNFT.CollectionPublicPath)!
+    let collectionRef = account.capabilities.borrow<&ArtDrop.Collection>(ArtDrop.CollectionPublicPath)!
     let loyaltyPoints = collectionRef.loyaltyPoints
 
     return loyaltyPoints

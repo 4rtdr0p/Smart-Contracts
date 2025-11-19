@@ -18,8 +18,8 @@
 				"testnet": "12ecc177508efad8"
 			}
 		},
-		"ExampleNFT": {
-			"source": "contracts/ExampleNFT.cdc",
+		"ArtDrop": {
+			"source": "contracts/ArtDrop.cdc",
 			"aliases": {
 				"testnet": "12ecc177508efad8"
 			}
@@ -122,7 +122,7 @@
 			"emulator-account": [
 				"Pistis",
 				"ExampleToken",
-				"ExampleNFT"
+				"ArtDrop"
 			],
 			"emulator-bob": []
 		},

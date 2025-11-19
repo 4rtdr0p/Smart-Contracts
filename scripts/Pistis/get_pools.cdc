@@ -1,4 +1,4 @@
-import "ExampleNFT" 
+import "ArtDrop" 
 import "NonFungibleToken"
 import "MetadataViews"
 
@@ -7,9 +7,9 @@ import "MetadataViews"
 
 access(all) fun main(address: Address): [Type] {
     let account = getAccount(address)
-    let collectionRef = account.capabilities.borrow<&ExampleNFT.Collection>(ExampleNFT.CollectionPublicPath)!
+    let collectionRef = account.capabilities.borrow<&ArtDrop.Collection>(ArtDrop.CollectionPublicPath)!
     let id = collectionRef.getIDs()[0]
-    let nftRef = collectionRef.borrowNFT(id)! as! &ExampleNFT.NFT
+    let nftRef = collectionRef.borrowNFT(id)! as! &ArtDrop.NFT
 
     return nftRef.getVaultTypes()
 

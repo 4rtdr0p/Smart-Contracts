@@ -16,11 +16,11 @@ import "MetadataViews"
 import "Pistis"
 import "FungibleToken"
 import "FlowToken"
-import "ExampleToken"
+
 // import "CrossVMMetadataViews"
 // import "EVM"
 
-access(all) contract ExampleNFT: NonFungibleToken {
+access(all) contract ArtDrop: NonFungibleToken {
 
     /// Standard Paths
     access(all) let CollectionStoragePath: StoragePath
@@ -65,7 +65,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
             self.description = description
             self.thumbnail = thumbnail
             self.royalties = MetadataViews.Royalty(
-                    receiver: getAccount(ExampleNFT.account.address).capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver),
+                    receiver: getAccount(ArtDrop.account.address).capabilities.get<&FlowToken.Vault>(/public/flowTokenReceiver),
                     cut: 0.5,
                     description: "The deployer gets 5% of every secondary sale."
                 )
@@ -79,7 +79,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
         /// and returns it to the caller so that they can own NFTs
         /// @{NonFungibleToken.Collection}
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <-ExampleNFT.createEmptyCollection(nftType: Type<@ExampleNFT.NFT>())
+            return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.NFT>())
 
             
         }
@@ -127,9 +127,9 @@ access(all) contract ExampleNFT: NonFungibleToken {
                 case Type<MetadataViews.ExternalURL>():
                     return MetadataViews.ExternalURL("https://example-nft.onflow.org/".concat(self.id.toString()))
                 case Type<MetadataViews.NFTCollectionData>():
-                    return ExampleNFT.resolveContractView(resourceType: Type<@ExampleNFT.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
+                    return ArtDrop.resolveContractView(resourceType: Type<@ArtDrop.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
                 case Type<MetadataViews.NFTCollectionDisplay>():
-                    return ExampleNFT.resolveContractView(resourceType: Type<@ExampleNFT.NFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
+                    return ArtDrop.resolveContractView(resourceType: Type<@ArtDrop.NFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
                 case Type<MetadataViews.Traits>():
                     // exclude mintedTime and foo to show other uses of Traits
                     let excludedTraits = ["mintedTime", "foo"]
@@ -156,7 +156,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
                     //      see FLIP-318: https://github.com/onflow/flips/issues/318
 
                     // Get the contract-level name and symbol values
-                    let contractLevel = ExampleNFT.resolveContractView(
+                    let contractLevel = ArtDrop.resolveContractView(
                             resourceType: nil,
                             viewType: Type<MetadataViews.EVMBridgedMetadata>()
                         ) as! MetadataViews.EVMBridgedMetadata?
@@ -186,7 +186,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
                     // contract also points to the resolved Cadence type and contract address. For more information
                     // about cross-VM NFTs, see FLIP-318: https://github.com/onflow/flips/issues/318
 
-                    return ExampleNFT.resolveContractView(resourceType: self.getType(), viewType: view)
+                    return ArtDrop.resolveContractView(resourceType: self.getType(), viewType: view)
                 case Type<CrossVMMetadataViews.EVMBytesMetadata>():
                     // This view is intended for Cadence-native NFTs with corresponding ERC721 implementations. By
                     // resolving, you're able to pass arbitrary metadata into your EVM contract whenever an NFT is
@@ -208,9 +208,9 @@ access(all) contract ExampleNFT: NonFungibleToken {
     }
 
     // Deprecated: Only here for backward compatibility.
-    access(all) resource interface ExampleNFTCollectionPublic {}
+    access(all) resource interface ArtDropCollectionPublic {}
 
-    access(all) resource Collection: NonFungibleToken.Collection, Pistis.Loyalty, ExampleNFTCollectionPublic {
+    access(all) resource Collection: NonFungibleToken.Collection, Pistis.Loyalty, ArtDropCollectionPublic {
         /// dictionary of NFT conforming tokens
         /// NFT is a resource type with an `UInt64` ID field
         access(all) var ownedNFTs: @{UInt64: {NonFungibleToken.NFT}}
@@ -219,24 +219,24 @@ access(all) contract ExampleNFT: NonFungibleToken {
         init () {
             self.ownedNFTs <- {}
             self.loyaltyPoints = {}
-            self.loyaltyPoints[ExampleNFT.account.address] = 0.0
+            self.loyaltyPoints[ArtDrop.account.address] = 0.0
         }
 
         access(all) fun addVault(vaultType: Type, vault: @{FungibleToken.Vault}, id: UInt64, vaultReceiverPath: PublicPath) {
-            let nft <- self.ownedNFTs.remove(key: id) as! @ExampleNFT.NFT
+            let nft <- self.ownedNFTs.remove(key: id) as! @ArtDrop.NFT
             nft.addVault(vaultType: vaultType, vault: <- vault, vaultReceiverPath: vaultReceiverPath)
             self.ownedNFTs[id] <-! nft 
         } 
 
         access(all) fun depositToVault(id: UInt64, vaultType: Type, vaultDeposit: @{FungibleToken.Vault}) {
-            let nft <- self.ownedNFTs.remove(key: id) as! @ExampleNFT.NFT
+            let nft <- self.ownedNFTs.remove(key: id) as! @ArtDrop.NFT
             nft.depositToVault(vaultType: vaultType, vaultDeposit: <- vaultDeposit)
             self.ownedNFTs[id] <-! nft 
         } 
 
         // Withdraw from a vault
         access(all) fun withdrawFromVault(id: UInt64, vaultType: Type) {
-            let nft <- self.ownedNFTs.remove(key: id) as! @ExampleNFT.NFT
+            let nft <- self.ownedNFTs.remove(key: id) as! @ArtDrop.NFT
             let newVault <- nft.withdrawFromVault(id: id, vaultType: vaultType)
             let account = getAccount(self.owner!.address)
             let vault <- newVault.remove(key: newVault.keys[0])!
@@ -250,26 +250,26 @@ access(all) contract ExampleNFT: NonFungibleToken {
         /// getSupportedNFTTypes returns a list of NFT types that this receiver accepts
         access(all) view fun getSupportedNFTTypes(): {Type: Bool} {
             let supportedTypes: {Type: Bool} = {}
-            supportedTypes[Type<@ExampleNFT.NFT>()] = true
+            supportedTypes[Type<@ArtDrop.NFT>()] = true
             return supportedTypes
         }
 
         /// Returns whether or not the given type is accepted by the collection
         /// A collection that can accept any type should just return true by default
         access(all) view fun isSupportedNFTType(type: Type): Bool {
-            return type == Type<@ExampleNFT.NFT>()
+            return type == Type<@ArtDrop.NFT>()
         }
 
         /// withdraw removes an NFT from the collection and moves it to the caller
         access(NonFungibleToken.Withdraw) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
             let token <- self.ownedNFTs.remove(key: withdrawID)
-                ?? panic("ExampleNFT.Collection.withdraw: Could not withdraw an NFT with ID "
+                ?? panic("ArtDrop.Collection.withdraw: Could not withdraw an NFT with ID "
                         .concat(withdrawID.toString())
                         .concat(". Check the submitted ID to make sure it is one that this collection owns."))
 
             // Based on NFT's edition and other factors, substract loyalty points from the collector
-            let collectorLoyalty = self.owner!.capabilities.borrow<&ExampleNFT.Collection>(ExampleNFT.CollectionPublicPath)!
-            collectorLoyalty.substractLoyalty(address: ExampleNFT.account.address, loyaltyPoints: 1.0)
+            let collectorLoyalty = self.owner!.capabilities.borrow<&ArtDrop.Collection>(ArtDrop.CollectionPublicPath)!
+            collectorLoyalty.substractLoyalty(address: ArtDrop.account.address, loyaltyPoints: 1.0)
 
             return <-token
         }
@@ -277,12 +277,12 @@ access(all) contract ExampleNFT: NonFungibleToken {
         /// deposit takes a NFT and adds it to the collections dictionary
         /// and adds the ID to the id array
         access(all) fun deposit(token: @{NonFungibleToken.NFT}) {
-            let token <- token as! @ExampleNFT.NFT
+            let token <- token as! @ArtDrop.NFT
             let id = token.id
 
             // Based on NFT's edition and other factors, add loyalty points to the collector
-            let collectorLoyalty = self.owner!.capabilities.borrow<&ExampleNFT.Collection>(ExampleNFT.CollectionPublicPath)!
-            collectorLoyalty.addLoyalty(address: ExampleNFT.account.address, loyaltyPoints: 1.0)
+            let collectorLoyalty = self.owner!.capabilities.borrow<&ArtDrop.Collection>(ArtDrop.CollectionPublicPath)!
+            collectorLoyalty.addLoyalty(address: ArtDrop.account.address, loyaltyPoints: 1.0)
 
             // add the new token to the dictionary which removes the old one
             let oldToken <- self.ownedNFTs[token.id] <- token
@@ -295,7 +295,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
             // in your contract
             let authTokenRef = (&self.ownedNFTs[id] as auth(NonFungibleToken.Update) &{NonFungibleToken.NFT}?)!
             //authTokenRef.updateTransferDate(date: getCurrentBlock().timestamp)
-            ExampleNFT.emitNFTUpdated(authTokenRef)
+            ArtDrop.emitNFTUpdated(authTokenRef)
         }
 
         /// getIDs returns an array of the IDs that are in the collection
@@ -324,7 +324,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
         /// and returns it to the caller
         /// @return A an empty collection of the same type
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <-ExampleNFT.createEmptyCollection(nftType: Type<@ExampleNFT.NFT>())
+            return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.NFT>())
         }
     }
 
@@ -358,10 +358,10 @@ access(all) contract ExampleNFT: NonFungibleToken {
                 let collectionData = MetadataViews.NFTCollectionData(
                     storagePath: self.CollectionStoragePath,
                     publicPath: self.CollectionPublicPath,
-                    publicCollection: Type<&ExampleNFT.Collection>(),
-                    publicLinkedType: Type<&ExampleNFT.Collection>(),
+                    publicCollection: Type<&ArtDrop.Collection>(),
+                    publicLinkedType: Type<&ArtDrop.Collection>(),
                     createEmptyCollectionFunction: (fun(): @{NonFungibleToken.Collection} {
-                        return <-ExampleNFT.createEmptyCollection(nftType: Type<@ExampleNFT.NFT>())
+                        return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.NFT>())
                     })
                 )
                 return collectionData
@@ -389,7 +389,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
                 // Compose the contract-level URI. In this case, the contract metadata is located on some HTTP host,
                 // but it could be IPFS, S3, a data URL containing the JSON directly, etc.
                 return MetadataViews.EVMBridgedMetadata(
-                    name: "ExampleNFT",
+                    name: "ArtDrop",
                     symbol: "XMPL",
                     uri: MetadataViews.URI(
                         baseURI: nil, // setting baseURI as nil sets the given value as the uri field value
@@ -412,7 +412,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
                 // Since this NFT is distributed in Cadence, it's declared as Cadence-native
                 let nativeVM = CrossVMMetadataViews.VM.Cadence
                 return CrossVMMetadataViews.EVMPointer(
-                    cadenceType: Type<@ExampleNFT.NFT>(),
+                    cadenceType: Type<@ArtDrop.NFT>(),
                     cadenceContractAddress: self.account.address,
                     evmContractAddress: evmContractAddress,
                     nativeVM: nativeVM
@@ -425,9 +425,9 @@ access(all) contract ExampleNFT: NonFungibleToken {
         name: String,
         description: String,
         thumbnail: String,
-    ): @ExampleNFT.NFT {
+    ): @ArtDrop.NFT {
         // borrow a reference to the NFTMinter resource in storage
-        let minter = self.account.storage.borrow<&ExampleNFT.NFTMinter>(from: ExampleNFT.MinterStoragePath)!
+        let minter = self.account.storage.borrow<&ArtDrop.NFTMinter>(from: ArtDrop.MinterStoragePath)!
         return <- minter.mintNFT(name: name, description: description, thumbnail: thumbnail)
     }
     
@@ -443,7 +443,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
             name: String,
             description: String,
             thumbnail: String,
-        ): @ExampleNFT.NFT {
+        ): @ArtDrop.NFT {
 
             let metadata: {String: AnyStruct} = {}
             let currentBlock = getCurrentBlock()
@@ -477,16 +477,16 @@ access(all) contract ExampleNFT: NonFungibleToken {
     init() {
 
         // Set the named paths
-        self.CollectionStoragePath = /storage/exampleNFTCollection
-        self.CollectionPublicPath = /public/exampleNFTCollection
-        self.MinterStoragePath = /storage/exampleNFTMinter
+        self.CollectionStoragePath = /storage/ArtDropCollection
+        self.CollectionPublicPath = /public/ArtDropCollection
+        self.MinterStoragePath = /storage/ArtDropMinter
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
         self.account.storage.save(<-collection, to: self.CollectionStoragePath)
 
         // create a public capability for the collection
-        let collectionCap = self.account.capabilities.storage.issue<&ExampleNFT.Collection>(self.CollectionStoragePath)
+        let collectionCap = self.account.capabilities.storage.issue<&ArtDrop.Collection>(self.CollectionStoragePath)
         self.account.capabilities.publish(collectionCap, at: self.CollectionPublicPath)
 
         // Create a Minter resource and save it to storage
