@@ -15,9 +15,9 @@
 // and artists to recall what came before and give it form. She represents the thread that links art to time and culture 
 // Literally, the memory of humanity encoded in creative work.
 
+import "NonFungibleToken"
 import "FungibleToken"
 import "FlowToken"
-import "NonFungibleToken"
 import "ViewResolver"
 import "MetadataViews"
 

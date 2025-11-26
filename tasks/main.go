@@ -22,7 +22,7 @@ func main() {
 
 	color.Green("Admin creates an Artist resource")
 	// Setup bob
-	o.Tx("Mneme/setup",
+	o.Tx("Mneme/setup_artist",
 		WithSigner("bob"),
 	)
 
@@ -35,7 +35,7 @@ func main() {
 		WithArg("preferredMedium", "Oil on Canvas"),
 		WithArg("socials", `{"Website": "https://www.johndoe.com/"}`),
 		WithArg("representation", "N/A"),
-		WithArg("accountAddress", "0x12ecc177508efad8"),
+		WithArg("accountAddress", "bob"),
 		WithArg("communityRoyalties", "0.5"),
 		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
 	)

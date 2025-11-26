@@ -11,24 +11,32 @@
 */
 
 import "NonFungibleToken"
+import "FungibleToken"
+import "FlowToken"
 import "ViewResolver"
 import "MetadataViews"
 import "Pistis"
-import "FungibleToken"
-import "FlowToken"
 
 // import "CrossVMMetadataViews"
 // import "EVM"
 
-access(all) contract ArtDrop: NonFungibleToken {
-
-    /// Standard Paths
-    access(all) let CollectionStoragePath: StoragePath
-    access(all) let CollectionPublicPath: PublicPath
-
+access(all) 
+contract ArtDrop: NonFungibleToken {
+    // -----------------------------------------------------------------------
+    // ArtDrop contract-level fields.
+    // These contain actual values that are stored in the smart contract.
+    // -----------------------------------------------------------------------
+    // Dictionary to hold general collection information
+    access(self) let collectionInfo: {String: AnyStruct}  
+    // -----------------------------------------------------------------------
+    // ArtDrop account paths
+    // -----------------------------------------------------------------------
+	access(all) let CollectionStoragePath: StoragePath
+	access(all) let CollectionPublicPath: PublicPath
     /// Path where the minter should be stored
     /// The standard paths for the collection are stored in the collection resource type
-    access(all) let MinterStoragePath: StoragePath
+    access(all) let ArtistStoragePath: StoragePath
+
 
     /// Event to show when an NFT is minted
     access(all) event Minted(
@@ -41,12 +49,30 @@ access(all) contract ArtDrop: NonFungibleToken {
         description: String
     )
 
+    // Editions rules struct
+    access(all) struct EditionsRules {
+        access(all) let purchasePrice: UFix64
+        access(all) let editionId: String
+        
+
+        init(purchasePrice: UFix64, editionId: String) {
+            self.purchasePrice = purchasePrice
+            self.editionId = editionId
+        }
+    }
+
+    // Editions rewards rule manager resource
+    access(all) resource EditionsManager {
+
+
+    }
+
     /// We choose the name NFT here, but this type can have any name now
     /// because the interface does not require it to have a specific name any more
-    access(all) resource NFT: NonFungibleToken.NFT, Pistis.Pool {
+    access(all) resource CertificateNFT: NonFungibleToken.NFT, Pistis.Pool {
+        access(all) let id: UInt64
         access(all) var vaultsDict: @{Type: {FungibleToken.Vault}}
         access(all) var vaultReceiverPath: {Type: PublicPath}
-        access(all) let id: UInt64
         access(all) let name: String
         access(all) let description: String
         access(all) let thumbnail: String 
@@ -79,7 +105,7 @@ access(all) contract ArtDrop: NonFungibleToken {
         /// and returns it to the caller so that they can own NFTs
         /// @{NonFungibleToken.Collection}
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.NFT>())
+            return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.CertificateNFT>())
 
             
         }
@@ -127,9 +153,9 @@ access(all) contract ArtDrop: NonFungibleToken {
                 case Type<MetadataViews.ExternalURL>():
                     return MetadataViews.ExternalURL("https://example-nft.onflow.org/".concat(self.id.toString()))
                 case Type<MetadataViews.NFTCollectionData>():
-                    return ArtDrop.resolveContractView(resourceType: Type<@ArtDrop.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
+                    return ArtDrop.resolveContractView(resourceType: Type<@ArtDrop.CertificateNFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
                 case Type<MetadataViews.NFTCollectionDisplay>():
-                    return ArtDrop.resolveContractView(resourceType: Type<@ArtDrop.NFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
+                    return ArtDrop.resolveContractView(resourceType: Type<@ArtDrop.CertificateNFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
                 case Type<MetadataViews.Traits>():
                     // exclude mintedTime and foo to show other uses of Traits
                     let excludedTraits = ["mintedTime", "foo"]
@@ -207,10 +233,7 @@ access(all) contract ArtDrop: NonFungibleToken {
         }
     }
 
-    // Deprecated: Only here for backward compatibility.
-    access(all) resource interface ArtDropCollectionPublic {}
-
-    access(all) resource Collection: NonFungibleToken.Collection, Pistis.Loyalty, ArtDropCollectionPublic {
+    access(all) resource Collection: NonFungibleToken.Collection, Pistis.Loyalty {
         /// dictionary of NFT conforming tokens
         /// NFT is a resource type with an `UInt64` ID field
         access(all) var ownedNFTs: @{UInt64: {NonFungibleToken.NFT}}
@@ -223,20 +246,20 @@ access(all) contract ArtDrop: NonFungibleToken {
         }
 
         access(all) fun addVault(vaultType: Type, vault: @{FungibleToken.Vault}, id: UInt64, vaultReceiverPath: PublicPath) {
-            let nft <- self.ownedNFTs.remove(key: id) as! @ArtDrop.NFT
+            let nft <- self.ownedNFTs.remove(key: id) as! @ArtDrop.CertificateNFT
             nft.addVault(vaultType: vaultType, vault: <- vault, vaultReceiverPath: vaultReceiverPath)
             self.ownedNFTs[id] <-! nft 
         } 
 
         access(all) fun depositToVault(id: UInt64, vaultType: Type, vaultDeposit: @{FungibleToken.Vault}) {
-            let nft <- self.ownedNFTs.remove(key: id) as! @ArtDrop.NFT
+            let nft <- self.ownedNFTs.remove(key: id) as! @ArtDrop.CertificateNFT
             nft.depositToVault(vaultType: vaultType, vaultDeposit: <- vaultDeposit)
             self.ownedNFTs[id] <-! nft 
         } 
 
         // Withdraw from a vault
         access(all) fun withdrawFromVault(id: UInt64, vaultType: Type) {
-            let nft <- self.ownedNFTs.remove(key: id) as! @ArtDrop.NFT
+            let nft <- self.ownedNFTs.remove(key: id) as! @ArtDrop.CertificateNFT
             let newVault <- nft.withdrawFromVault(id: id, vaultType: vaultType)
             let account = getAccount(self.owner!.address)
             let vault <- newVault.remove(key: newVault.keys[0])!
@@ -250,14 +273,14 @@ access(all) contract ArtDrop: NonFungibleToken {
         /// getSupportedNFTTypes returns a list of NFT types that this receiver accepts
         access(all) view fun getSupportedNFTTypes(): {Type: Bool} {
             let supportedTypes: {Type: Bool} = {}
-            supportedTypes[Type<@ArtDrop.NFT>()] = true
+            supportedTypes[Type<@ArtDrop.CertificateNFT>()] = true
             return supportedTypes
         }
 
         /// Returns whether or not the given type is accepted by the collection
         /// A collection that can accept any type should just return true by default
         access(all) view fun isSupportedNFTType(type: Type): Bool {
-            return type == Type<@ArtDrop.NFT>()
+            return type == Type<@ArtDrop.CertificateNFT>()
         }
 
         /// withdraw removes an NFT from the collection and moves it to the caller
@@ -277,7 +300,7 @@ access(all) contract ArtDrop: NonFungibleToken {
         /// deposit takes a NFT and adds it to the collections dictionary
         /// and adds the ID to the id array
         access(all) fun deposit(token: @{NonFungibleToken.NFT}) {
-            let token <- token as! @ArtDrop.NFT
+            let token <- token as! @ArtDrop.CertificateNFT
             let id = token.id
 
             // Based on NFT's edition and other factors, add loyalty points to the collector
@@ -324,7 +347,7 @@ access(all) contract ArtDrop: NonFungibleToken {
         /// and returns it to the caller
         /// @return A an empty collection of the same type
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.NFT>())
+            return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.CertificateNFT>())
         }
     }
 
@@ -361,7 +384,7 @@ access(all) contract ArtDrop: NonFungibleToken {
                     publicCollection: Type<&ArtDrop.Collection>(),
                     publicLinkedType: Type<&ArtDrop.Collection>(),
                     createEmptyCollectionFunction: (fun(): @{NonFungibleToken.Collection} {
-                        return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.NFT>())
+                        return <-ArtDrop.createEmptyCollection(nftType: Type<@ArtDrop.CertificateNFT>())
                     })
                 )
                 return collectionData
@@ -412,7 +435,7 @@ access(all) contract ArtDrop: NonFungibleToken {
                 // Since this NFT is distributed in Cadence, it's declared as Cadence-native
                 let nativeVM = CrossVMMetadataViews.VM.Cadence
                 return CrossVMMetadataViews.EVMPointer(
-                    cadenceType: Type<@ArtDrop.NFT>(),
+                    cadenceType: Type<@ArtDrop.CertificateNFT>(),
                     cadenceContractAddress: self.account.address,
                     evmContractAddress: evmContractAddress,
                     nativeVM: nativeVM
@@ -421,29 +444,51 @@ access(all) contract ArtDrop: NonFungibleToken {
         return nil
     }
 
-    access(all) fun mintNFT(
+/*     access(all) fun mintNFT(
         name: String,
         description: String,
         thumbnail: String,
-    ): @ArtDrop.NFT {
+    ): @ArtDrop.CertificateNFT {
         // borrow a reference to the NFTMinter resource in storage
-        let minter = self.account.storage.borrow<&ArtDrop.NFTMinter>(from: ArtDrop.MinterStoragePath)!
+        let minter = self.account.storage.borrow<&ArtDrop.ArtDropArtist>(from: ArtDrop.ArtistStoragePath)!
         return <- minter.mintNFT(name: name, description: description, thumbnail: thumbnail)
-    }
-    
+    } */
 
-    /// Resource that an admin or something similar would own to be
-    /// able to mint new NFTs
-    ///
-    access(all) resource NFTMinter {
-
-        /// mintNFT mints a new NFT with a new ID
-        /// and returns it to the calling context
-        access(all) fun mintNFT(
+    // Administrator resource
+    access(all) resource Administrator {
+        // Function to create a new Artist resource
+        access(all) fun createArtist(
             name: String,
             description: String,
             thumbnail: String,
-        ): @ArtDrop.NFT {
+        ): @ArtDropArtist {
+            let artist <- create ArtDropArtist(name: name, description: description, thumbnail: thumbnail)
+            return <- artist
+        }
+    }
+    
+
+    /// Resource that an artist would own to be
+    /// able to mint new Certificate NFTs
+    ///
+    access(all) resource ArtDropArtist {
+        access(all) let name: String
+        access(all) let description: String
+        access(all) let thumbnail: String
+
+        init(name: String, description: String, thumbnail: String) {
+            self.name = name
+            self.description = description
+            self.thumbnail = thumbnail
+        }
+
+        /// mintNFT mints a new NFT with a new ID
+        /// and returns it to the calling context
+        access(all) fun mintCertificateNFT(
+            name: String,
+            description: String,
+            thumbnail: String,
+        ): @ArtDrop.CertificateNFT {
 
             let metadata: {String: AnyStruct} = {}
             let currentBlock = getCurrentBlock()
@@ -454,7 +499,7 @@ access(all) contract ArtDrop: NonFungibleToken {
             metadata["foo"] = "bar"
 
             // create a new NFT
-            var newNFT <- create NFT(
+            var newNFT <- create CertificateNFT(
                 id: 1,
                 name: name,
                 description: description,
@@ -475,11 +520,13 @@ access(all) contract ArtDrop: NonFungibleToken {
     }
 
     init() {
+        self.collectionInfo = {}
 
+        let identifier = "ArtDrop_\(self.account.address))"
         // Set the named paths
-        self.CollectionStoragePath = /storage/ArtDropCollection
-        self.CollectionPublicPath = /public/ArtDropCollection
-        self.MinterStoragePath = /storage/ArtDropMinter
+        self.CollectionStoragePath = StoragePath(identifier: identifier)!
+        self.CollectionPublicPath = PublicPath(identifier: identifier)!
+        self.ArtistStoragePath = StoragePath(identifier: "\(identifier)Artist")!
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
@@ -489,8 +536,8 @@ access(all) contract ArtDrop: NonFungibleToken {
         let collectionCap = self.account.capabilities.storage.issue<&ArtDrop.Collection>(self.CollectionStoragePath)
         self.account.capabilities.publish(collectionCap, at: self.CollectionPublicPath)
 
-        // Create a Minter resource and save it to storage
-        let minter <- create NFTMinter()
-        self.account.storage.save(<-minter, to: self.MinterStoragePath)
+        // Create a ArtDropArtist resource and save it to storage
+        let minter <- create ArtDropArtist()
+        self.account.storage.save(<-minter, to: self.ArtistStoragePath)
     }
 }
