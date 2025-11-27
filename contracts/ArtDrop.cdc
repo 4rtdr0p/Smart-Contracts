@@ -38,7 +38,12 @@ contract Mneme: NonFungibleToken {
     access(all) let ArtDropStoragePath: StoragePath
     access(all) let ArtDropPublicPath: PublicPath
     access(all) let ArtistStoragePath: StoragePath
-
+    // -----------------------------------------------------------------------
+    // Mneme Entitlements
+    // ----------------------------------------------------------------------- 
+    access(all) entitlement Admin
+    access(all) entitlement AddArtist
+    access(all) entitlement MintCertificateNFT
 
     /// Event to show when an NFT is minted
     access(all) event Minted(
@@ -62,19 +67,75 @@ contract Mneme: NonFungibleToken {
     // and its rewards rules
     access(all) resource Edition {
         access(all) let id: UInt64
-        access(all) let title: String
-        access(all) let description: String
-        access(all) let image: String
+        access(all) let name: String
+        access(all) let price: UFix64
+        access(all) let type: String
+        access(all) let story: String
+        access(all) let dimensions: {String: String}
+        access(all) let reprintLimit: Int64
+        access(all) let artistAddress: Address
+        access(all) let totalMinted: Int64
+
+
         access(all) let rewards: {String: AnyStruct}
 
-        init() {
+        init(
+            name: String,
+            price: UFix64,
+            type: String,
+            story: String,
+            dimensions: {String: String},
+            reprintLimit: Int64,
+            artistAddress: Address,
+            image: String) {
+
+            self.name = name
+            self.price = price
             self.id = 0
-            self.title = ""
-            self.description = ""
-            self.image = ""
+            self.type = type
+            self.story = story
+            self.dimensions = dimensions
+            self.reprintLimit = reprintLimit
+            self.artistAddress = artistAddress
             self.rewards = {}
+            self.totalMinted = 0
+        }
+
+        /// mintNFT mints a new NFT with a new ID
+        /// and returns it to the calling context
+        access(MintCertificateNFT) 
+        fun mintCertificateNFT(thumbnail: String): @Mneme.CertificateNFT {
+
+            let metadata: {String: AnyStruct} = {}
+            let currentBlock = getCurrentBlock()
+            metadata["mintedBlock"] = currentBlock.height
+            metadata["mintedTime"] = currentBlock.timestamp
+
+            // this piece of metadata will be used to show embedding rarity into a trait
+            metadata["foo"] = "bar"
+
+            // create a new NFT
+            var newNFT <- create CertificateNFT(
+                id: 1,
+                name: self.name,
+                description: self.story,
+                thumbnail: thumbnail,
+                metadata: metadata
+            )
+
+            emit Minted(type: newNFT.getType().identifier,
+                        id: newNFT.id,
+                        uuid: newNFT.uuid,
+                        minterAddress: self.owner?.address,
+                        minterUUID: self.uuid,
+                        name: newNFT.name,
+                        description: newNFT.description
+                        )
+
+            return <-newNFT
         }
     }
+    
 
     // Storage resource for all of the Artists' metadata
     // and their Editions' rewards rules
@@ -494,14 +555,19 @@ contract Mneme: NonFungibleToken {
     // Administrator resource
     access(all) resource Administrator {
         // Function to create a new Artist resource
-        access(all) fun createArtist(
+/*         access(Admin) fun createArtist(
             name: String,
             description: String,
             thumbnail: String,
         ): @MnemeArtist {
+            // create the artist resource
             let artist <- create MnemeArtist(name: name, description: description, thumbnail: thumbnail)
+            // fetch authorized ref to the ArtDrop resource
+            let artDrop = Mneme.account.storage.borrow<auth(addArtist) &Mneme.ArtDrop>(from: Mneme.ArtDropStoragePath)!
+
+
             return <- artist
-        }
+        } */
     }
     
 
@@ -518,43 +584,8 @@ contract Mneme: NonFungibleToken {
             self.description = description
             self.thumbnail = thumbnail
         }
-
-        /// mintNFT mints a new NFT with a new ID
-        /// and returns it to the calling context
-        access(all) fun mintCertificateNFT(
-            name: String,
-            description: String,
-            thumbnail: String,
-        ): @Mneme.CertificateNFT {
-
-            let metadata: {String: AnyStruct} = {}
-            let currentBlock = getCurrentBlock()
-            metadata["mintedBlock"] = currentBlock.height
-            metadata["mintedTime"] = currentBlock.timestamp
-
-            // this piece of metadata will be used to show embedding rarity into a trait
-            metadata["foo"] = "bar"
-
-            // create a new NFT
-            var newNFT <- create CertificateNFT(
-                id: 1,
-                name: name,
-                description: description,
-                thumbnail: thumbnail,
-                metadata: metadata
-            )
-
-            emit Minted(type: newNFT.getType().identifier,
-                        id: newNFT.id,
-                        uuid: newNFT.uuid,
-                        minterAddress: self.owner?.address,
-                        minterUUID: self.uuid,
-                        name: name,
-                        description: description)
-
-            return <-newNFT
-        }
     }
+
 
     init() {
         self.collectionInfo = {}
