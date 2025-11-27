@@ -35,6 +35,8 @@ contract Mneme: NonFungibleToken {
 	access(all) let CollectionPublicPath: PublicPath
     /// Path where the minter should be stored
     /// The standard paths for the collection are stored in the collection resource type
+    access(all) let ArtDropStoragePath: StoragePath
+    access(all) let ArtDropPublicPath: PublicPath
     access(all) let ArtistStoragePath: StoragePath
 
 
@@ -78,10 +80,27 @@ contract Mneme: NonFungibleToken {
     // and their Editions' rewards rules
     // this is stored inside the smart contract's account storage
     access(all) resource ArtDrop {
+        // Dictionary to map Artist by address to their Editions
         access(all) let artists: @{Address: {UInt64: Edition}}
 
         init() {
             self.artists <- {}
+        }
+
+        // function to add a new Artist to the ArtDrop
+        access(all) fun addArtist(artistAddress: Address) {
+            pre {
+                self.artists[artistAddress] == nil: "There's already an Artist with this address"
+            }
+            self.artists[artistAddress] <-! {}
+        }
+        // function to get an Artist's Editions
+        access(all) fun getArtistEditions(artistAddress: Address): &{UInt64: Edition}? {
+            pre {
+                self.artists[artistAddress] != nil: "There's no Artist with this address"
+            }
+            let result = &self.artists[artistAddress] as &{UInt64: Edition}?
+            return result
         }
     }
 
@@ -542,6 +561,8 @@ contract Mneme: NonFungibleToken {
 
         let identifier = "Mneme_\(self.account.address))"
         // Set the named paths
+        self.ArtDropStoragePath = StoragePath(identifier: identifier)!
+        self.ArtDropPublicPath = PublicPath(identifier: identifier)!
         self.CollectionStoragePath = StoragePath(identifier: identifier)!
         self.CollectionPublicPath = PublicPath(identifier: identifier)!
         self.ArtistStoragePath = StoragePath(identifier: "\(identifier)Artist")!
@@ -554,8 +575,14 @@ contract Mneme: NonFungibleToken {
         let collectionCap = self.account.capabilities.storage.issue<&Mneme.Collection>(self.CollectionStoragePath)
         self.account.capabilities.publish(collectionCap, at: self.CollectionPublicPath)
 
-        // Create a MnemeArtist resource and save it to storage
-        // let minter <- create MnemeArtist()
+        // Create an ArtDrop resource and save it to storage
+        // on the ArtDrop account
+        let artDrop <- create ArtDrop()
+        self.account.storage.save(<-artDrop, to: self.ArtDropStoragePath)
+        // create a public capability for the ArtDrop resource
+        // so that editions can be publicly accessed
+        // let artDropCap = self.account.capabilities.storage.issue<&Mneme.ArtDrop>(self.ArtDropStoragePath)
+        // self.account.capabilities.publish(artDropCap, at: self.ArtDropPublicPath)
         // self.account.storage.save(<-minter, to: self.ArtistStoragePath)
     }
 }
