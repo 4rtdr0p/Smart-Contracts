@@ -28,6 +28,8 @@ contract Mneme: NonFungibleToken {
     // -----------------------------------------------------------------------
     // Dictionary to hold general collection information
     access(self) let collectionInfo: {String: AnyStruct}  
+    access(self) var artistEditions: {Address: [Int64]}
+    access(self) var totalEditions: UInt64
     // -----------------------------------------------------------------------
     // Mneme account paths
     // -----------------------------------------------------------------------
@@ -37,6 +39,7 @@ contract Mneme: NonFungibleToken {
     /// The standard paths for the collection are stored in the collection resource type
     access(all) let ArtDropStoragePath: StoragePath
     access(all) let ArtDropPublicPath: PublicPath
+    access(all) let AdministratorStoragePath: StoragePath
     access(all) let ArtistStoragePath: StoragePath
     // -----------------------------------------------------------------------
     // Mneme Entitlements
@@ -50,8 +53,6 @@ contract Mneme: NonFungibleToken {
         type: String,
         id: UInt64,
         uuid: UInt64,
-        minterAddress: Address?,
-        minterUUID: UInt64,
         name: String,
         description: String
     )
@@ -74,24 +75,23 @@ contract Mneme: NonFungibleToken {
         access(all) let dimensions: {String: String}
         access(all) let reprintLimit: Int64
         access(all) let artistAddress: Address
-        access(all) let totalMinted: Int64
-
+        access(all) var totalMinted: Int64
 
         access(all) let rewards: {String: AnyStruct}
 
         init(
+            id: UInt64,
             name: String,
             price: UFix64,
             type: String,
             story: String,
             dimensions: {String: String},
             reprintLimit: Int64,
-            artistAddress: Address,
-            image: String) {
+            artistAddress: Address) {
 
             self.name = name
             self.price = price
-            self.id = 0
+            self.id = id
             self.type = type
             self.story = story
             self.dimensions = dimensions
@@ -105,6 +105,9 @@ contract Mneme: NonFungibleToken {
         /// and returns it to the calling context
         access(MintCertificateNFT) 
         fun mintCertificateNFT(thumbnail: String): @Mneme.CertificateNFT {
+            pre {
+                self.totalMinted < self.reprintLimit && self.reprintLimit != 0: "This edition has reached the reprint limit"
+            }
 
             let metadata: {String: AnyStruct} = {}
             let currentBlock = getCurrentBlock()
@@ -116,22 +119,22 @@ contract Mneme: NonFungibleToken {
 
             // create a new NFT
             var newNFT <- create CertificateNFT(
-                id: 1,
+                id: UInt64(self.totalMinted),
                 name: self.name,
                 description: self.story,
                 thumbnail: thumbnail,
                 metadata: metadata
             )
-
+            // increase the total minted count
+            self.totalMinted = self.totalMinted + 1
+            // emit the Minted event
             emit Minted(type: newNFT.getType().identifier,
                         id: newNFT.id,
                         uuid: newNFT.uuid,
-                        minterAddress: self.owner?.address,
-                        minterUUID: self.uuid,
                         name: newNFT.name,
                         description: newNFT.description
                         )
-
+            // return the new NFT
             return <-newNFT
         }
     }
@@ -448,7 +451,22 @@ contract Mneme: NonFungibleToken {
             return <-Mneme.createEmptyCollection(nftType: Type<@Mneme.CertificateNFT>())
         }
     }
+    // -----------------------------------------------------------------------
+    // Mneme public functions
+    // -----------------------------------------------------------------------
+    
+    // Get an Edition's metadata
+    // parameters: artistAddress: Address, editionId: UInt64
+    access(all) view fun  getEditionMetadata(artistAddress: Address, editionId: UInt64): &Mneme.Edition? {
+        pre {
+            self.artistEditions[artistAddress] != nil: "This artist does not exist"
+        }
+        let storageIdentifier = "ArtDrop/\(artistAddress)/\(Mneme.totalEditions)"
+        let publicPath = PublicPath(identifier: storageIdentifier)!
 
+        let editionRef = Mneme.account.capabilities.borrow<&Mneme.Edition>(publicPath)!
+        return editionRef
+    }
     /// createEmptyCollection creates an empty Collection for the specified NFT type
     /// and returns it to the caller so that they can own NFTs
     access(all) fun createEmptyCollection(nftType: Type): @{NonFungibleToken.Collection} {
@@ -554,27 +572,40 @@ contract Mneme: NonFungibleToken {
 
     // Administrator resource
     access(all) resource Administrator {
-        // Function to create a new Artist resource
-/*         access(Admin) fun createArtist(
+        // Function to create a new Edition resource
+        access(all) fun createEdition(
             name: String,
-            description: String,
-            thumbnail: String,
-        ): @MnemeArtist {
-            // create the artist resource
-            let artist <- create MnemeArtist(name: name, description: description, thumbnail: thumbnail)
-            // fetch authorized ref to the ArtDrop resource
-            let artDrop = Mneme.account.storage.borrow<auth(addArtist) &Mneme.ArtDrop>(from: Mneme.ArtDropStoragePath)!
+            price: UFix64,
+            type: String,
+            story: String,
+            dimensions: {String: String},
+            reprintLimit: Int64,
+            artistAddress: Address) {
+                // increase the total editions count
+            Mneme.totalEditions = Mneme.totalEditions + 1
 
+            let storageIdentifier = "ArtDrop/\(artistAddress)/\(Mneme.totalEditions)"
+            let storagePath = StoragePath(identifier: storageIdentifier)!
+            let publicPath = PublicPath(identifier: storageIdentifier)!
 
-            return <- artist
-        } */
+            // create a new edition resource
+            let newEdition <- create Edition(id: Mneme.totalEditions, name: name, price: price, type: type, story: story, dimensions: dimensions, reprintLimit: reprintLimit, artistAddress: artistAddress)
+
+            // save the new edition to storage
+            Mneme.account.storage.save(<-newEdition, to: storagePath)
+            // create a public capability for the edition
+            let editionCap = Mneme.account.capabilities.storage.issue<&Mneme.Edition>(storagePath)
+            Mneme.account.capabilities.publish(editionCap, at: publicPath)
+            // return <- newEdition
+        }
+
     }
     
 
     /// Resource that an artist would own to be
     /// able to mint new Certificate NFTs
     ///
-    access(all) resource MnemeArtist {
+/*     access(all) resource MnemeArtist {
         access(all) let name: String
         access(all) let description: String
         access(all) let thumbnail: String
@@ -584,16 +615,19 @@ contract Mneme: NonFungibleToken {
             self.description = description
             self.thumbnail = thumbnail
         }
-    }
+    } */
 
 
     init() {
         self.collectionInfo = {}
+        self.artistEditions = {}
+        self.totalEditions = 0
 
         let identifier = "Mneme_\(self.account.address))"
         // Set the named paths
         self.ArtDropStoragePath = StoragePath(identifier: identifier)!
         self.ArtDropPublicPath = PublicPath(identifier: identifier)!
+        self.AdministratorStoragePath = StoragePath(identifier: "\(identifier)Administrator")!
         self.CollectionStoragePath = StoragePath(identifier: identifier)!
         self.CollectionPublicPath = PublicPath(identifier: identifier)!
         self.ArtistStoragePath = StoragePath(identifier: "\(identifier)Artist")!
@@ -601,10 +635,12 @@ contract Mneme: NonFungibleToken {
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
         self.account.storage.save(<-collection, to: self.CollectionStoragePath)
-
         // create a public capability for the collection
         let collectionCap = self.account.capabilities.storage.issue<&Mneme.Collection>(self.CollectionStoragePath)
         self.account.capabilities.publish(collectionCap, at: self.CollectionPublicPath)
+        // Create an Administrator resource and save it to storage
+        let administrator <- create Administrator()
+        self.account.storage.save(<-administrator, to: self.AdministratorStoragePath)
 
         // Create an ArtDrop resource and save it to storage
         // on the ArtDrop account

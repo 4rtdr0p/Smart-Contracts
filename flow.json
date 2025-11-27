@@ -1,7 +1,7 @@
 {
 	"contracts": {
 		"Mneme": {
-			"source": "contracts/Mneme.cdc",
+			"source": "contracts/ArtDrop.cdc",
 			"aliases": {
 				"testnet": "12ecc177508efad8"
 			}

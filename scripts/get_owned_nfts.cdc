@@ -4,7 +4,7 @@ import "MetadataViews"
 access(all) fun main(account: Address): [AnyStruct]?  {
  
     let account = getAccount(account)
-    let answer: [AnyStruct]  = []
+    let answer: [AnyStruct]  = [] 
     var nft: AnyStruct = nil
 
         
