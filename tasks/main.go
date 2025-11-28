@@ -51,5 +51,19 @@ func main() {
 		WithArg("editionId", 1),
 		WithArg("thumbnail", "https://www.johndoe.com/images/sunflowers.jpg"),
 	).Print()
+	// Bob attempts to mint a Certificate NFT
+	// without the authorized capability
+	// Bob claims the authorized capability to mint a Certificate NFT
+	o.Tx("Mneme/claim_mint_cap",
+		WithSigner("bob"),
+		WithArg("editionId", 1),
+	).Print()
+
+	o.Tx("Mneme/mint_certificate",
+		WithSigner("bob"),
+		WithArg("artistAddress", "bob"),
+		WithArg("editionId", 1),
+		WithArg("thumbnail", "https://www.johndoe.com/images/sunflowers.jpg"),
+	).Print()
 
 }

@@ -30,6 +30,7 @@ contract Mneme: NonFungibleToken {
     access(self) let collectionInfo: {String: AnyStruct}  
     access(self) var artistEditions: {Address: [Int64]}
     access(self) var totalEditions: UInt64
+    access(all) let address: Address
     // -----------------------------------------------------------------------
     // Mneme account paths
     // -----------------------------------------------------------------------
@@ -600,7 +601,7 @@ contract Mneme: NonFungibleToken {
         self.collectionInfo = {}
         self.artistEditions = {}
         self.totalEditions = 0
-
+        self.address = self.account.address
         let identifier = "Mneme_\(self.account.address))"
         // Set the named paths
         self.ArtDropStoragePath = StoragePath(identifier: identifier)!
