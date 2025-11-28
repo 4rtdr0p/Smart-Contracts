@@ -426,6 +426,10 @@ contract Mneme: NonFungibleToken {
     // -----------------------------------------------------------------------
     // Mneme public functions
     // -----------------------------------------------------------------------
+    // Get all the Artists and their Editions
+    access(all) view fun getAllArtists(): {Address: [Int64]} {
+        return self.artistEditions
+    }
     
     // Get an Edition's metadata
     // parameters: artistAddress: Address, editionId: UInt64
@@ -543,7 +547,10 @@ contract Mneme: NonFungibleToken {
             dimensions: {String: String},
             reprintLimit: Int64,
             artistAddress: Address) {
-                // increase the total editions count
+            if Mneme.artistEditions[artistAddress] == nil {
+                Mneme.artistEditions[artistAddress] = []
+            }
+            // increase the total editions count
             Mneme.totalEditions = Mneme.totalEditions + 1
 
             let storageIdentifier = "ArtDrop/\(artistAddress)/\(Mneme.totalEditions)"
@@ -558,6 +565,8 @@ contract Mneme: NonFungibleToken {
             // create a public capability for the edition
             let editionCap = Mneme.account.capabilities.storage.issue<&Mneme.Edition>(storagePath)
             Mneme.account.capabilities.publish(editionCap, at: publicPath)
+            // add the new edition to the artist's editions
+            Mneme.artistEditions[artistAddress]!.append(Int64(Mneme.totalEditions))
             // return <- newEdition
         }
 

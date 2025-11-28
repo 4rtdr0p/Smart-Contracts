@@ -1,4 +1,4 @@
-import "ArtDrop"
+import "Mneme"
 
 // This transaction is for the admin to create a new edition resource
 // and store it in the Mneme smart contract storage

@@ -1,6 +1,6 @@
 import "Mneme"
 
 access(all)
-fun main(): [String] {
-  return Mneme.getAllArtistsNames()
-}
+fun main(): {Address: [Int64]} {
+  return Mneme.getAllArtists()
+}  
