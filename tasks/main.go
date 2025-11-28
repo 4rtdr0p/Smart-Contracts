@@ -21,6 +21,10 @@ func main() {
 	color.Blue("Mneme Contract testing")
 
 	color.Green("Admin creates an Artist resource")
+	// Setup artist account for ArtDrop collection
+	o.Tx("Mneme/setup",
+		WithSigner("bob"),
+	).Print()
 
 	// Admin creates an Edition rule for an artist
 	o.Tx("Mneme/admin/create_edition",
@@ -40,9 +44,12 @@ func main() {
 		WithArg("artistAddress", "bob"),
 		WithArg("editionId", 1),
 	).Print()
-	// Artist claims the authorized capability to mint a Certificate NFT
-	/* 	o.Tx("Mneme/artist/claim_authorized_capability",
-		WithSigner("bob"),
-	).Print() */
+	// Admin mints a Certificate NFT
+	o.Tx("Mneme/admin/mint_certificate",
+		WithSigner("account"),
+		WithArg("artistAddress", "bob"),
+		WithArg("editionId", 1),
+		WithArg("thumbnail", "https://www.johndoe.com/images/sunflowers.jpg"),
+	).Print()
 
 }

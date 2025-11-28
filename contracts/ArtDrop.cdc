@@ -104,7 +104,7 @@ contract Mneme: NonFungibleToken {
         /// mintNFT mints a new NFT with a new ID
         /// and returns it to the calling context
         access(MintCertificateNFT) 
-        fun mintCertificateNFT(thumbnail: String): @Mneme.CertificateNFT {
+        fun mintCertificateNFT(thumbnail: String) {
             pre {
                 self.totalMinted < self.reprintLimit && self.reprintLimit != 0: "This edition has reached the reprint limit"
             }
@@ -134,8 +134,10 @@ contract Mneme: NonFungibleToken {
                         name: newNFT.name,
                         description: newNFT.description
                         )
-            // return the new NFT
-            return <-newNFT
+            // send the new NFT to the artist's collection
+            let artistAccount = getAccount(self.artistAddress)
+            let artistCollection = artistAccount.capabilities.borrow<&{NonFungibleToken.Receiver}>(Mneme.CollectionPublicPath)!
+            artistCollection.deposit(token: <- newNFT)
         }
     }
     
@@ -433,7 +435,7 @@ contract Mneme: NonFungibleToken {
     
     // Get an Edition's metadata
     // parameters: artistAddress: Address, editionId: UInt64
-    access(all) view fun  getEditionMetadata(artistAddress: Address, editionId: UInt64): &Mneme.Edition? {
+    access(all) view fun getEditionMetadata(artistAddress: Address, editionId: UInt64): &Mneme.Edition? {
         pre {
             self.artistEditions[artistAddress] != nil: "This artist does not exist"
         }
@@ -568,6 +570,27 @@ contract Mneme: NonFungibleToken {
             // add the new edition to the artist's editions
             Mneme.artistEditions[artistAddress]!.append(Int64(Mneme.totalEditions))
             // return <- newEdition
+
+            // publish an authorized capability to the 
+            // stored edition resource to the artist
+            let artistCap = Mneme.account.capabilities.storage.issue<auth(MintCertificateNFT) &Mneme.Edition>(storagePath)
+            Mneme.account.inbox.publish(artistCap, name: storageIdentifier, recipient: artistAddress)
+
+        }
+
+        // Function to mint a new certificate NFT
+        access(all) fun mintCertificateNFT(
+            artistAddress: Address,
+            editionId: UInt64,
+            thumbnail: String
+        ) { 
+            let storageIdentifier = "ArtDrop/\(artistAddress)/\(editionId)"
+            let editionRef = Mneme.account.storage.borrow<auth(MintCertificateNFT) &Mneme.Edition>(from: StoragePath(identifier: storageIdentifier)!)!
+            if editionRef == nil {
+                panic("Edition not found")
+            }
+            editionRef.mintCertificateNFT(thumbnail: thumbnail)
+            // return <- newCertificateNFT  
         }
 
     }
