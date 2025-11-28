@@ -140,34 +140,6 @@ contract Mneme: NonFungibleToken {
     }
     
 
-    // Storage resource for all of the Artists' metadata
-    // and their Editions' rewards rules
-    // this is stored inside the smart contract's account storage
-    access(all) resource ArtDrop {
-        // Dictionary to map Artist by address to their Editions
-        access(all) let artists: @{Address: {UInt64: Edition}}
-
-        init() {
-            self.artists <- {}
-        }
-
-        // function to add a new Artist to the ArtDrop
-        access(all) fun addArtist(artistAddress: Address) {
-            pre {
-                self.artists[artistAddress] == nil: "There's already an Artist with this address"
-            }
-            self.artists[artistAddress] <-! {}
-        }
-        // function to get an Artist's Editions
-        access(all) fun getArtistEditions(artistAddress: Address): &{UInt64: Edition}? {
-            pre {
-                self.artists[artistAddress] != nil: "There's no Artist with this address"
-            }
-            let result = &self.artists[artistAddress] as &{UInt64: Edition}?
-            return result
-        }
-    }
-
     /// We choose the name NFT here, but this type can have any name now
     /// because the interface does not require it to have a specific name any more
     access(all) resource CertificateNFT: NonFungibleToken.NFT, Pistis.Pool {
@@ -560,16 +532,6 @@ contract Mneme: NonFungibleToken {
         return nil
     }
 
-/*     access(all) fun mintNFT(
-        name: String,
-        description: String,
-        thumbnail: String,
-    ): @Mneme.CertificateNFT {
-        // borrow a reference to the NFTMinter resource in storage
-        let minter = self.account.storage.borrow<&Mneme.MnemeArtist>(from: Mneme.ArtistStoragePath)!
-        return <- minter.mintNFT(name: name, description: description, thumbnail: thumbnail)
-    } */
-
     // Administrator resource
     access(all) resource Administrator {
         // Function to create a new Edition resource
@@ -600,22 +562,6 @@ contract Mneme: NonFungibleToken {
         }
 
     }
-    
-
-    /// Resource that an artist would own to be
-    /// able to mint new Certificate NFTs
-    ///
-/*     access(all) resource MnemeArtist {
-        access(all) let name: String
-        access(all) let description: String
-        access(all) let thumbnail: String
-
-        init(name: String, description: String, thumbnail: String) {
-            self.name = name
-            self.description = description
-            self.thumbnail = thumbnail
-        }
-    } */
 
 
     init() {
@@ -641,15 +587,5 @@ contract Mneme: NonFungibleToken {
         // Create an Administrator resource and save it to storage
         let administrator <- create Administrator()
         self.account.storage.save(<-administrator, to: self.AdministratorStoragePath)
-
-        // Create an ArtDrop resource and save it to storage
-        // on the ArtDrop account
-        let artDrop <- create ArtDrop()
-        self.account.storage.save(<-artDrop, to: self.ArtDropStoragePath)
-        // create a public capability for the ArtDrop resource
-        // so that editions can be publicly accessed
-        // let artDropCap = self.account.capabilities.storage.issue<&Mneme.ArtDrop>(self.ArtDropStoragePath)
-        // self.account.capabilities.publish(artDropCap, at: self.ArtDropPublicPath)
-        // self.account.storage.save(<-minter, to: self.ArtistStoragePath)
     }
 }

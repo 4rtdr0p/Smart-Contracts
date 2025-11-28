@@ -49,4 +49,13 @@ func main() {
 		WithArg("artistAddress", "bob"),
 		WithArg("editionRule", "100"),
 	).Print()
+	// Artist claims the authorized capability to mint a Certificate NFT
+	o.Tx("Mneme/artist/claim_authorized_capability",
+		WithSigner("bob"),
+	).Print()
+	// Artist mints a Certificate NFT from last edition
+	o.Tx("Mneme/artist/mint_certificate_nft",
+		WithSigner("bob"),
+		WithArg("thumbnail", "https://www.johndoe.com/images/sunflowers.jpg"),
+	).Print()
 }

@@ -1,7 +1,7 @@
 import "ArtDrop"
 
-// This transaction is for the admin to create a new artist struct
-// and store it in the Mneme smart contract
+// This transaction is for the admin to create a new edition resource
+// and store it in the Mneme smart contract storage
 
 transaction(
     name: String,
