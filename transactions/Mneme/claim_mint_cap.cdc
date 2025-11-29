@@ -11,4 +11,4 @@ transaction(editionId: UInt64) {
         // let mintCapability = signer.inbox.claim<&Capability>(name, provider: provider)
         signer.storage.save(cap, to: storagePath)
     }
-}(t, "A card with this name already exists")
+}

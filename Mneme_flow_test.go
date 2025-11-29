@@ -56,7 +56,7 @@ func TestFullFlow(t *testing.T) {
 	).AssertSuccess(t).Print()
 	// Bob attempts to mint a Certificate NFT
 	// without the authorized capability
-	color.Green("Bob attempts to mint a Certificate NFT without the authorized capability")
+	color.Red("Bob attempts to mint a Certificate NFT without the authorized capability")
 	o.Tx("Mneme/mint_certificate",
 		WithSigner("bob"),
 		WithArg("artistAddress", "bob"),
@@ -64,5 +64,17 @@ func TestFullFlow(t *testing.T) {
 		WithArg("thumbnail", "https://www.johndoe.com/images/sunflowers.jpg"),
 	).AssertFailure(t, "unexpectedly found nil while forcing an Optional value").Print()
 	// Bob claims the authorized capability to mint a Certificate NFT
-
+	color.Green("Bob claims the authorized capability to mint a Certificate NFT")
+	o.Tx("Mneme/claim_mint_cap",
+		WithSigner("bob"),
+		WithArg("editionId", 1),
+	).AssertSuccess(t).Print()
+	// Bob mints a Certificate NFT
+	color.Green("Bob mints a Certificate NFT")
+	o.Tx("Mneme/authorized_mint_certificate",
+		WithSigner("bob"),
+		WithArg("artistAddress", "bob"),
+		WithArg("editionId", 1),
+		WithArg("thumbnail", "https://www.johndoe.com/images/sunflowers.jpg"),
+	).AssertSuccess(t).Print()
 }
