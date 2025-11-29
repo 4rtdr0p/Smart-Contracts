@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 
 	. "github.com/bjartek/overflow/v2"
@@ -21,106 +20,49 @@ func TestFullFlow(t *testing.T) {
 	color.White("STARTING ArtDrop FLOW TEST")
 	color.Green("GREEN transactions are meant to SUCCEED")
 	color.Red("Red transactions are meant to FAIL")
-	// initialize the contract and setups
+	// initialize the contract and setup Bob account for ArtDrop collection
 	color.Green("Bob account setup to Mneme")
 	o.Tx("Mneme/setup",
 		WithSigner("bob"),
 	).AssertSuccess(t).Print()
-
-	color.Green("Admin creates an Artist resource")
-	// Admin create artist
-	id, error := o.Tx("Mneme/admin/create_artist",
+	// Admin creates an Edition rule for an artist
+	color.Green("Admin creates an Edition rule for an artist")
+	o.Tx("Mneme/admin/create_edition",
 		WithSigner("account"),
-		WithArg("name", "John Doe"),
-		WithArg("biography", "German-born, John Doe partially grew up in Cameroon, West Africa. She studied art education with Professor Kiefer (father of Anselm Kiefer) and sculpting with Professor Spelmann at the Johann Wolfgang Goethe University in Frankfurt/Main, Germany. During this time she also met the Fantastic Realist, Robert Venosa, and greatly inspired by his work, began her work as a painter. During their 30 year relationship they closely worked together, taught workshops worldwide and shared studios, both in the US as well as in Europe. Today John Doe works as a painter and sculptress and remains a central figure in contemporary Visionary Art. Her paintings offer the viewer a detailed glimpse into her inner landscapes - imagery that has been inspired by expanded states of consciousness. Her Visionary Realism is decidedly feminine and places the Universal Woman in an intimate cosmos. She transcribes her ecstatic experiences but also her subtle reflections on the nature of women in a realistic style which marries the fantastic to the sacred. The artist has spoken on behalf of art and culture at events and conferences such as 'Estados Modificados De Consciencia', Universiity of Cuernavaca Mexico, 'Chimeria', France, and the 'The Promethean Impulse' at the HR Giger Museum in Switzerland, et. al.. In addition the artist has created original art and photography for numerous CD as well as book and magazine covers. John Doe has been exhibiting her work worldwide since 1985 and is represented in the permanent collection of NAIA Museum, France. She currently keeps studios in the USA as well as France."),
-		WithArg("nationality", "German"),
-		WithArg("preferredMedium", "Oil on Canvas"),
-		WithArg("socials", `{"Website": "https://www.johndoe.com/"}`),
-		WithArg("representation", "N/A"),
-		WithArg("accountAddress", "bob"),
-		WithArg("communityRoyalties", "0.5"),
-		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
-	).AssertSuccess(t).Print().GetIdFromEvent("ArtistCreated", "id")
-	fmt.Println(error, "artist id ", id)
-	// Get the artist
-	o.Script("get_artist",
-		WithArg("address", "bob"),
+		WithArg("name", "Sunflowers"),
+		WithArg("price", "100.0"),
+		WithArg("type", "Limited Edition"),
+		WithArg("story", "John Doe's Sunflowers"),
+		WithArg("dimensions", `{"Width": "100 in", "Height": "100 in", "Weight": "10 lbs"}`),
+		WithArg("reprintLimit", "100"),
+		WithArg("artistAddress", "bob"),
+	).AssertSuccess(t).Print()
+	// Get all the Artist and their Editions
+	color.Green("Get all the Artist and their Editions")
+	o.Script("get_all_artists").Print()
+	// Get the edition rule
+	color.Green("Get the edition rule")
+	o.Script("get_edition_metadata",
+		WithArg("artistAddress", "bob"),
+		WithArg("editionId", 1),
 	).Print()
+	// Admin mints a Certificate NFT
+	color.Green("Admin mints a Certificate NFT")
+	o.Tx("Mneme/admin/mint_certificate",
+		WithSigner("account"),
+		WithArg("artistAddress", "bob"),
+		WithArg("editionId", 1),
+		WithArg("thumbnail", "https://www.johndoe.com/images/sunflowers.jpg"),
+	).AssertSuccess(t).Print()
+	// Bob attempts to mint a Certificate NFT
+	// without the authorized capability
+	color.Green("Bob attempts to mint a Certificate NFT without the authorized capability")
+	o.Tx("Mneme/mint_certificate",
+		WithSigner("bob"),
+		WithArg("artistAddress", "bob"),
+		WithArg("editionId", 1),
+		WithArg("thumbnail", "https://www.johndoe.com/images/sunflowers.jpg"),
+	).AssertFailure(t, "unexpectedly found nil while forcing an Optional value").Print()
+	// Bob claims the authorized capability to mint a Certificate NFT
 
-	// FAILED create artist with same id
-	color.Red("Admin creates an Artist resource with the same Address and it should fail")
-	o.Tx("Mneme/admin/create_artist",
-		WithSigner("account"),
-		WithArg("name", "John Doe"),
-		WithArg("biography", "German-born, John Doe partially grew up in Cameroon, West Africa. She studied art education with Professor Kiefer (father of Anselm Kiefer) and sculpting with Professor Spelmann at the Johann Wolfgang Goethe University in Frankfurt/Main, Germany. During this time she also met the Fantastic Realist, Robert Venosa, and greatly inspired by his work, began her work as a painter. During their 30 year relationship they closely worked together, taught workshops worldwide and shared studios, both in the US as well as in Europe. Today John Doe works as a painter and sculptress and remains a central figure in contemporary Visionary Art. Her paintings offer the viewer a detailed glimpse into her inner landscapes - imagery that has been inspired by expanded states of consciousness. Her Visionary Realism is decidedly feminine and places the Universal Woman in an intimate cosmos. She transcribes her ecstatic experiences but also her subtle reflections on the nature of women in a realistic style which marries the fantastic to the sacred. The artist has spoken on behalf of art and culture at events and conferences such as 'Estados Modificados De Consciencia', Universiity of Cuernavaca Mexico, 'Chimeria', France, and the 'The Promethean Impulse' at the HR Giger Museum in Switzerland, et. al.. In addition the artist has created original art and photography for numerous CD as well as book and magazine covers. John Doe has been exhibiting her work worldwide since 1985 and is represented in the permanent collection of NAIA Museum, France. She currently keeps studios in the USA as well as France."),
-		WithArg("nationality", "German"),
-		WithArg("preferredMedium", "Oil on Canvas"),
-		WithArg("socials", `{"Website": "https://www.johndoe.com/"}`),
-		WithArg("representation", "N/A"),
-		WithArg("accountAddress", "bob"),
-		WithArg("communityRoyalties", "0.5"),
-		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
-	).AssertFailure(t, "There's already an artist with this account address.").Print()
-	// Create a new Edition blueprint
-	color.Green("Admin creates Edition blueprint under Artist")
-	pieceId, error := o.Tx("Mneme/admin/create_edition_blueprint",
-		WithSigner("account"),
-		WithArg("title", "Sunflowers"),
-		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
-		WithArg("artistAddress", "bob"),
-		WithArg("artistName", "John Doe"),
-		WithArg("creationDate", "2008"),
-		WithArg("creationLocation", "Unspecified"),
-		WithArg("artType", "Psychodelics"),
-		WithArg("medium", "Oil on Canvas"),
-		WithArg("subjectMatter", "Flowers"),
-		WithArg("provenanceNotes", "N/A"),
-		WithArg("collection", "VIVA Gallery"),
-		WithArg("acquisitionDetails", "N/A"),
-		WithArg("price", "844.0"),
-		WithArg("encodedImg", "https://www.johndoe.com/images/sunflowers.jpg"),
-	).AssertSuccess(t).Print().GetIdFromEvent("PieceCreated", "id")
-	fmt.Println(error, pieceId)
-	// Get Edition
-	o.Script("get_edition",
-		WithArg("id", pieceId),
-		WithArg("artistName", "John Doe"),
-	)
-	// FAILED Create Edition with same title under same artist
-	color.Red("Admin creates a Edition with the same title under same artist and it should fail")
-	o.Tx("Mneme/admin/create_edition_blueprint",
-		WithSigner("account"),
-		WithArg("title", "Sunflowers"),
-		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
-		WithArg("artistAddress", "bob"),
-		WithArg("artistName", "John Doe"),
-		WithArg("creationDate", "2008"),
-		WithArg("creationLocation", "Unspecified"),
-		WithArg("artType", "Psychodelics"),
-		WithArg("medium", "Oil on Canvas"),
-		WithArg("subjectMatter", "Flowers"),
-		WithArg("provenanceNotes", "N/A"),
-		WithArg("collection", "VIVA Gallery"),
-		WithArg("acquisitionDetails", "N/A"),
-		WithArg("price", "844.0"),
-		WithArg("encodedImg", "https://www.johndoe.com/images/sunflowers.jpg"),
-	).AssertFailure(t, `There's already a piece with this id`).Print()
-	// Mint a new Print
-	color.Green("Admin mints a new Print")
-	events := o.Tx("Mneme/admin/mint_print",
-		WithSigner("account"),
-		WithArg("XUID", "1234567890"),
-		WithArg("pieceName", "Sunflowers"),
-		WithArg("pieceId", pieceId),
-		WithArg("artistAddress", "bob"),
-		WithArg("paidPrice", "844.0"),
-		WithArg("description", "Printed on 300 gr, paper stock. With John Doe logo and title. Open edition"),
-		WithArg("image", "https://www.johndoe.com/images/sunflowers.jpg"),
-		WithArg("recipient", "bob"),
-	).AssertSuccess(t).Print().GetEventsWithName("PrintMinted")
-	fmt.Println(events)
-	// Get the print
-	o.Script("get_print",
-		WithArg("xuid", "1234567890"),
-	).Print()
 }

@@ -20,7 +20,7 @@ func main() {
 
 	color.Blue("Mneme Contract testing")
 
-	color.Green("Admin creates an Artist resource")
+	color.Green("Setup bob account for ArtDrop collection")
 	// Setup artist account for ArtDrop collection
 	o.Tx("Mneme/setup",
 		WithSigner("bob"),
