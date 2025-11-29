@@ -59,7 +59,7 @@ func main() {
 		WithArg("editionId", 1),
 	).Print()
 
-	o.Tx("Mneme/mint_certificate",
+	o.Tx("Mneme/authorized_mint_certificate",
 		WithSigner("bob"),
 		WithArg("artistAddress", "bob"),
 		WithArg("editionId", 1),

@@ -5,7 +5,7 @@ transaction(editionId: UInt64) {
         let inboxIdentifier = "ArtDrop/\(signer.address)/\(editionId)"
         let storagePath = StoragePath(identifier: inboxIdentifier)!
 
-        let cap = signer.inbox.claim<auth(Mneme.MintCertificateNFT) &Mneme.Edition>(inboxIdentifier, provider: Mneme.address)
+        let cap: Capability<auth(Mneme.MintCertificateNFT) &Mneme.Edition> = signer.inbox.claim<auth(Mneme.MintCertificateNFT) &Mneme.Edition>(inboxIdentifier, provider: Mneme.address)!
     //    let address = Mneme.address 
     //    let artDropInbox = getAccount(Mneme.address).inbox
         // let mintCapability = signer.inbox.claim<&Capability>(name, provider: provider)

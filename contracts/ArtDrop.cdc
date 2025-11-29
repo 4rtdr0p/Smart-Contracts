@@ -574,7 +574,7 @@ contract Mneme: NonFungibleToken {
 
             // publish an authorized capability to the 
             // stored edition resource to the artist
-            let artistCap = Mneme.account.capabilities.storage.issue<auth(MintCertificateNFT) &Mneme.Edition>(storagePath)
+            let artistCap: Capability<auth(Mneme.MintCertificateNFT) &Mneme.Edition> = Mneme.account.capabilities.storage.issue<auth(MintCertificateNFT) &Mneme.Edition>(storagePath)
             Mneme.account.inbox.publish(artistCap, name: storageIdentifier, recipient: artistAddress)
 
         }
