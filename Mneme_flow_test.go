@@ -81,6 +81,16 @@ func TestFullFlow(t *testing.T) {
 		WithArg("editionId", 1),
 		WithArg("thumbnail", "https://www.johndoe.com/images/sunflowers.jpg"),
 	).AssertSuccess(t).Print()
+	// Bob checks if she has the Certificate NFT
+	color.Green("Bob checks if she has the Certificate NFT")
+	o.Script("get_owned_nfts",
+		WithArg("account", "bob"),
+	).Print()
+	// Bob checks if he has the loyalty points
+	color.Green("Bob checks if he has the loyalty points")
+	o.Script("Pistis/get_loyalty_by_address",
+		WithArg("address", "bob"),
+	).Print()
 	// Bob(artist) transfers the Certificate NFT to Alice
 	color.Green("Bob(artist) transfers the Certificate NFT to Alice")
 	o.Tx("Mneme/transfer_certificate",

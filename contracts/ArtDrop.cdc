@@ -124,7 +124,8 @@ contract Mneme: NonFungibleToken {
                 name: self.name,
                 description: self.story,
                 thumbnail: thumbnail,
-                metadata: metadata
+                metadata: metadata,
+                artistAddress: self.artistAddress
             )
             // increase the total minted count
             self.totalMinted = self.totalMinted + 1
@@ -147,6 +148,7 @@ contract Mneme: NonFungibleToken {
     /// because the interface does not require it to have a specific name any more
     access(all) resource CertificateNFT: NonFungibleToken.NFT, Pistis.Pool {
         access(all) let id: UInt64
+        access(all) let artistAddress: Address
         access(all) var vaultsDict: @{Type: {FungibleToken.Vault}}
         access(all) var vaultReceiverPath: {Type: PublicPath}
         access(all) let name: String
@@ -160,9 +162,11 @@ contract Mneme: NonFungibleToken {
             name: String,
             description: String,
             thumbnail: String,
-            metadata: {String: AnyStruct}
+            metadata: {String: AnyStruct},
+            artistAddress: Address
         ) {
             self.id = id
+            self.artistAddress = artistAddress
             self.name = name
             self.description = description
             self.thumbnail = thumbnail
@@ -314,11 +318,24 @@ contract Mneme: NonFungibleToken {
         /// NFT is a resource type with an `UInt64` ID field
         access(all) var ownedNFTs: @{UInt64: {NonFungibleToken.NFT}}
         access(all) var loyaltyPoints: {Address: UFix64}
+        access(all) var supportedArtists: {Address: [Int64]}
 
         init () {
             self.ownedNFTs <- {}
             self.loyaltyPoints = {}
             self.loyaltyPoints[Mneme.account.address] = 0.0
+            self.supportedArtists = {}
+        }
+
+        // Function to calculate loyalty points
+        access(all) view fun calculateLoyaltyPoints(artistAddress: Address): Int {
+        // get the array of editions
+           let editions = self.supportedArtists[artistAddress]!
+           // loyalty points is the of editions multiplied by 10
+           let loyaltyPoints: Int = editions.length * 10
+
+
+           return loyaltyPoints
         }
 
         access(all) fun addVault(vaultType: Type, vault: @{FungibleToken.Vault}, id: UInt64, vaultReceiverPath: PublicPath) {
@@ -366,9 +383,9 @@ contract Mneme: NonFungibleToken {
                         .concat(withdrawID.toString())
                         .concat(". Check the submitted ID to make sure it is one that this collection owns."))
 
-            // Based on NFT's edition and other factors, substract loyalty points from the collector
-            let collectorLoyalty = self.owner!.capabilities.borrow<&Mneme.Collection>(Mneme.CollectionPublicPath)!
-            collectorLoyalty.substractLoyalty(address: Mneme.account.address, loyaltyPoints: 1.0)
+            // Remove loyalty points from the collector
+            self.substractLoyalty(address: self.owner?.address!, loyaltyPoints: 10.0)
+            
 
             return <-token
         }
@@ -378,14 +395,18 @@ contract Mneme: NonFungibleToken {
         access(all) fun deposit(token: @{NonFungibleToken.NFT}) {
             let token <- token as! @Mneme.CertificateNFT
             let id = token.id
-
-            // Based on NFT's edition and other factors, add loyalty points to the collector
-            let collectorLoyalty = self.owner!.capabilities.borrow<&Mneme.Collection>(Mneme.CollectionPublicPath)!
-            collectorLoyalty.addLoyalty(address: Mneme.account.address, loyaltyPoints: 1.0)
+            let artistAddress = token.artistAddress
 
             // add the new token to the dictionary which removes the old one
             let oldToken <- self.ownedNFTs[token.id] <- token
+            if self.supportedArtists[artistAddress] == nil {
+                self.supportedArtists[artistAddress] = []
+            }
+            self.supportedArtists[artistAddress]!.append(Int64(id))
 
+            let loyaltyPoints = self.calculateLoyaltyPoints(artistAddress: artistAddress)
+            // Based on NFT's edition and other factors, add loyalty points to the collector
+            self.addLoyalty(address: self.owner?.address!, loyaltyPoints: UFix64(loyaltyPoints))
             destroy oldToken
 
             // This code is for testing purposes only

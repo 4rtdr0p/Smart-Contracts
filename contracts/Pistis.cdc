@@ -34,6 +34,8 @@ import "ExampleToken"
 access(all) 
 contract interface Pistis {
 
+    access(all) event LoyaltyAdded(address: Address, loyaltyPoints: UFix64)
+
   //  access(all) entitlement Withdraw
 
     /**
@@ -48,7 +50,11 @@ contract interface Pistis {
         access(all) var loyaltyPoints: {Address: UFix64}
         
         access(all) fun addLoyalty(address: Address, loyaltyPoints: UFix64) {
+            if self.loyaltyPoints[address] == nil {
+                self.loyaltyPoints[address] = 0.0
+            }
             self.loyaltyPoints[address] = self.loyaltyPoints[address]! + loyaltyPoints
+            emit LoyaltyAdded(address: address, loyaltyPoints: loyaltyPoints)
         }
 
         access(all) fun substractLoyalty(address: Address, loyaltyPoints: UFix64) {
@@ -61,6 +67,10 @@ contract interface Pistis {
         
         access(all) fun getLoyaltyPoints(): {Address: UFix64} {
             return self.loyaltyPoints
+        }
+
+        access(all) fun getLoyaltyPointsByAddress(address: Address): UFix64 {
+            return self.loyaltyPoints[address]!
         }
         
 
