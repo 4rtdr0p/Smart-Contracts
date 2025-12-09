@@ -1,13 +1,7 @@
 {
 	"contracts": {
-		"Mneme": {
+		"ArtDrop": {
 			"source": "contracts/ArtDrop.cdc",
-			"aliases": {
-				"testnet": "12ecc177508efad8"
-			}
-		},
-		"Pistis": {
-			"source": "contracts/Pistis.cdc",
 			"aliases": {
 				"testnet": "12ecc177508efad8"
 			}
@@ -18,10 +12,16 @@
 				"testnet": "12ecc177508efad8"
 			}
 		},
-		"ArtDrop": {
+		"Mneme": {
 			"source": "contracts/ArtDrop.cdc",
 			"aliases": {
-				"testnet": "12ecc177508efad8"
+				"testnet": "e6ddfc62f8ec2020"
+			}
+		},
+		"Pistis": {
+			"source": "contracts/Pistis.cdc",
+			"aliases": {
+				"testnet": "e6ddfc62f8ec2020"
 			}
 		}
 	},
@@ -108,17 +108,21 @@
 			"address": "f8d6e0586b0a20c7",
 			"key": "5207fc6478c602d37e344e4639ac4020707ad95b572ddfa88af9fbec61647ffa"
 		},
-		"emulator-bob": {
-			"address": "f3fcd2c1a78f5eee",
-			"key": "3b90c6ed0051a32a9bbbd8d584d04f9db4948a63974e0a4ac70d637193d7e4c7"
-		},
 		"emulator-alice": {
 			"address": "179b6b1cb6755e31",
 			"key": "7d83b4ce78fe1366e9a39001020450f348669355dfbebb94b23fc1578122d78d"
 		},
+		"emulator-bob": {
+			"address": "f3fcd2c1a78f5eee",
+			"key": "3b90c6ed0051a32a9bbbd8d584d04f9db4948a63974e0a4ac70d637193d7e4c7"
+		},
 		"testnet-artdrop": {
 			"address": "12ecc177508efad8",
 			"key": "2de15f37c266103e486dbdc0c15273d234536036f1a0318dbec79e3a85daccde"
+		},
+		"testnet-mneme": {
+			"address": "e6ddfc62f8ec2020",
+			"key": "1cf49f7f4971acb060223272b903126288b7067b65ce213358d90e08caf9c3d0"
 		}
 	},
 	"deployments": {
@@ -128,11 +132,12 @@
 				"ExampleToken",
 				"Mneme"
 			],
-			"emulator-bob": [],
-			"emulator-alice": []
+			"emulator-alice": [],
+			"emulator-bob": []
 		},
 		"testnet": {
-			"testnet-artdrop": [
+			"testnet-mneme": [
+				"Pistis",
 				"Mneme"
 			]
 		}

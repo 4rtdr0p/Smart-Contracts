@@ -23,9 +23,7 @@ import "FungibleToken"
 import "FlowToken"
 import "NonFungibleToken"
 import "ViewResolver"
-import "MetadataViews" 
-import "ExampleToken" 
-// import "FindViews"
+import "MetadataViews"  
 
 
 // Right now, I just need this interface to manage an NFT as a pool

@@ -50,6 +50,25 @@ func TestFullFlow(t *testing.T) {
 		WithArg("artistAddress", "bob"),
 		WithArg("editionId", 1),
 	).Print()
+	// Admin edits the edition rule
+	color.Green("Admin edits the edition rule")
+	o.Tx("Mneme/admin/edit_edition",
+		WithSigner("account"),
+		WithArg("editionID", 1),
+		WithArg("artistAddress", "bob"),
+		WithArg("name", "Sunflowers (edited)"),
+		WithArg("price", "100.0"),
+		WithArg("type", "Limited Edition"),
+		WithArg("story", "John Doe's Sunflowers (edited)"),
+		WithArg("dimensions", `{"Width": "100 in", "Height": "100 in", "Weight": "10 lbs"}`),
+		WithArg("reprintLimit", "100"),
+	).AssertSuccess(t).Print()
+	// Get the edition rule
+	color.Green("Get the edition rule")
+	o.Script("get_edition_metadata",
+		WithArg("artistAddress", "bob"),
+		WithArg("editionId", 1),
+	).Print()
 	// Admin mints a Certificate NFT
 	color.Green("Admin mints a Certificate NFT")
 	o.Tx("Mneme/admin/mint_certificate",

@@ -12,7 +12,7 @@
 
 import "NonFungibleToken"
 import "FungibleToken"
-import "FlowToken"
+import "FlowToken" 
 import "ViewResolver"
 import "MetadataViews"
 import "Pistis"
@@ -69,12 +69,12 @@ contract Mneme: NonFungibleToken {
     // and its rewards rules
     access(all) resource Edition {
         access(all) let id: UInt64
-        access(all) let name: String
-        access(all) let price: UFix64
-        access(all) let type: String
-        access(all) let story: String
-        access(all) let dimensions: {String: String}
-        access(all) let reprintLimit: Int64
+        access(all) var name: String
+        access(all) var price: UFix64
+        access(all) var type: String
+        access(all) var story: String
+        access(all) var dimensions: {String: String}
+        access(all) var reprintLimit: Int64
         access(all) let artistAddress: Address
         access(all) var totalMinted: Int64
 
@@ -102,6 +102,23 @@ contract Mneme: NonFungibleToken {
             self.totalMinted = 0
         }
 
+        access(Admin) fun editEdition(
+            name: String?,
+            price: UFix64?,
+            type: String?,
+            story: String?,
+            dimensions: {String: String}?,
+            reprintLimit: Int64?) {
+                pre {
+                    self.totalMinted == 0: "This edition has already been minted"
+                }
+            self.name = name ?? self.name
+            self.price = price ?? self.price
+            self.type = type ?? self.type
+            self.story = story ?? self.story
+            self.dimensions = dimensions ?? self.dimensions
+            self.reprintLimit = reprintLimit ?? self.reprintLimit
+        }
         /// mintNFT mints a new NFT with a new ID
         /// and returns it to the calling context
         access(MintCertificateNFT) 
@@ -587,7 +604,7 @@ contract Mneme: NonFungibleToken {
             // save the new edition to storage
             Mneme.account.storage.save(<-newEdition, to: storagePath)
             // create a public capability for the edition
-            let editionCap = Mneme.account.capabilities.storage.issue<&Mneme.Edition>(storagePath)
+            let editionCap: Capability<&Mneme.Edition> = Mneme.account.capabilities.storage.issue<&Mneme.Edition>(storagePath)
             Mneme.account.capabilities.publish(editionCap, at: publicPath)
             // add the new edition to the artist's editions
             Mneme.artistEditions[artistAddress]!.append(Int64(Mneme.totalEditions))
