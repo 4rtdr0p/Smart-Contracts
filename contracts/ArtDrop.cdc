@@ -197,7 +197,17 @@ contract Mneme: NonFungibleToken {
             self.vaultReceiverPath = {}
         }
 
-
+        view access(all)
+        fun getTraits(): {String: AnyStruct} {
+            let metadata: {String: AnyStruct} = {"name": self.name}
+            metadata["editionID"] = self.id
+            metadata["editionName"] = self.name
+            metadata["editionDescription"] = self.description
+            metadata["editionThumbnail"] = self.thumbnail
+            metadata["editionMetadata"] = self.metadata
+            metadata["editionArtistAddress"] = self.artistAddress
+            return metadata
+        }
         /// createEmptyCollection creates an empty Collection
         /// and returns it to the caller so that they can own NFTs
         /// @{NonFungibleToken.Collection}
@@ -255,20 +265,8 @@ contract Mneme: NonFungibleToken {
                     return Mneme.resolveContractView(resourceType: Type<@Mneme.CertificateNFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
                 case Type<MetadataViews.Traits>():
                     // exclude mintedTime and foo to show other uses of Traits
-                    let excludedTraits = ["mintedTime", "foo"]
-                    let traitsView = MetadataViews.dictToTraits(dict: self.metadata, excludedNames: excludedTraits)
-
-                    // mintedTime is a unix timestamp, we should mark it with a displayType so platforms know how to show it.
-                    let mintedTimeTrait = MetadataViews.Trait(name: "mintedTime", value: self.metadata["mintedTime"]!, displayType: "Date", rarity: nil)
-                    traitsView.addTrait(mintedTimeTrait)
-
-                    // foo is a trait with its own rarity
-                    let fooTraitRarity = MetadataViews.Rarity(score: 10.0, max: 100.0, description: "Common")
-                    let fooTrait = MetadataViews.Trait(name: "foo", value: self.metadata["foo"], displayType: nil, rarity: fooTraitRarity)
-                    traitsView.addTrait(fooTrait)
-                    
-
-                    return traitsView
+                    let excludedTraits = self.getTraits() 
+                    return MetadataViews.dictToTraits(dict: self.getTraits(), excludedNames: [])
                 case Type<MetadataViews.EVMBridgedMetadata>():
                     // Implementing this view gives the project control over how the bridged NFT is represented as an
                     // ERC721 when bridged to EVM on Flow via the public infrastructure bridge.
@@ -594,7 +592,7 @@ contract Mneme: NonFungibleToken {
             // increase the total editions count
             Mneme.totalEditions = Mneme.totalEditions + 1
 
-            let storageIdentifier = "ArtDrop/\(artistAddress)/\(Mneme.totalEditions)"
+            let storageIdentifier = "ArtDrop_Edition_\(artistAddress)_\(Mneme.totalEditions)"
             let storagePath = StoragePath(identifier: storageIdentifier)!
             let publicPath = PublicPath(identifier: storageIdentifier)!
 
@@ -623,7 +621,7 @@ contract Mneme: NonFungibleToken {
             editionId: UInt64,
             thumbnail: String
         ) { 
-            let storageIdentifier = "ArtDrop/\(artistAddress)/\(editionId)"
+            let storageIdentifier = "ArtDrop_Edition_\(artistAddress)_\(Mneme.totalEditions)"
             let editionRef = Mneme.account.storage.borrow<auth(MintCertificateNFT) &Mneme.Edition>(from: StoragePath(identifier: storageIdentifier)!)!
             if editionRef == nil {
                 panic("Edition not found")

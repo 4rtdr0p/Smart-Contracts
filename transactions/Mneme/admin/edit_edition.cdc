@@ -14,12 +14,11 @@ transaction(
     reprintLimit: Int64?) {
 
     prepare(admin: auth(BorrowValue) &Account) {
-        let storageIdentifier = "ArtDrop/\(artistAddress)/\(editionID)"
+        let storageIdentifier = "ArtDrop_Edition_\(artistAddress)_\(editionID)"
         let storagePath = StoragePath(identifier: storageIdentifier)!
         let editionRef = admin.storage.borrow<auth(Mneme.Admin) &Mneme.Edition>(from: storagePath)!
 
         editionRef.editEdition(name: name, price: price, type: type, story: story, dimensions: dimensions, reprintLimit: reprintLimit)
     }
             
-    
 }
