@@ -6,9 +6,9 @@ transaction(
     thumbnail: String
 ) {
     prepare(signer: auth(BorrowValue) &Account) {
-        let storageIdentifier = "ArtDrop/\(artistAddress)/\(editionId)"
-        let editionRef = signer.storage.borrow<auth(Mneme.MintCertificateNFT) &Mneme.Edition>(from: StoragePath(identifier: storageIdentifier)!)!
+        let storageIdentifier = "ArtDrop_Edition_".concat(artistAddress.toString()).concat("_").concat(editionId.toString())
+        let editionRef = signer.storage.borrow<auth(Mneme.Editions) &Mneme.Edition>(from: StoragePath(identifier: storageIdentifier)!)!
 
         editionRef.mintCertificateNFT(thumbnail: thumbnail)
-    }
+    } 
 }

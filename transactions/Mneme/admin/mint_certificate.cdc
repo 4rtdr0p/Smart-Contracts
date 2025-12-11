@@ -11,7 +11,7 @@ import "Mneme"
     let Administrator: &Mneme.Administrator
 
     prepare(admin: auth(BorrowValue) &Account) {
-        self.Administrator = admin.storage.borrow<auth(Mneme.MintCertificateNFT) &Mneme.Administrator>(from: Mneme.AdministratorStoragePath)!
+        self.Administrator = admin.storage.borrow<auth(Mneme.Editions) &Mneme.Administrator>(from: Mneme.AdministratorStoragePath)!
     }
     execute {
         let newCardID = self.Administrator.mintCertificateNFT(

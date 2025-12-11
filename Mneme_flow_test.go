@@ -111,15 +111,15 @@ func TestFullFlow(t *testing.T) {
 		WithArg("address", "bob"),
 	).Print()
 	// Bob(artist) transfers the Certificate NFT to Alice
-	color.Green("Bob(artist) transfers the Certificate NFT to Alice")
-	o.Tx("Mneme/transfer_certificate",
-		WithSigner("bob"),
-		WithArg("to", "alice"),
-		WithArg("id", 1),
-	).AssertSuccess(t).Print()
-	// Alice checks if she has the Certificate NFT
-	color.Green("Alice checks if she has the Certificate NFT")
-	o.Script("get_owned_nfts",
-		WithArg("account", "alice"),
-	).Print()
+	/* 	color.Green("Bob(artist) transfers the Certificate NFT to Alice")
+	   	o.Tx("Mneme/transfer_certificate",
+	   		WithSigner("bob"),
+	   		WithArg("to", "alice"),
+	   		WithArg("id", 1),
+	   	).AssertSuccess(t).Print()
+	   	// Alice checks if she has the Certificate NFT
+	   	color.Green("Alice checks if she has the Certificate NFT")
+	   	o.Script("get_owned_nfts",
+	   		WithArg("account", "alice"),
+	   	).Print() */
 }

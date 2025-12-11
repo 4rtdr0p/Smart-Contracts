@@ -47,7 +47,7 @@ contract Mneme: NonFungibleToken {
     // ----------------------------------------------------------------------- 
     access(all) entitlement Admin
     access(all) entitlement AddArtist
-    access(all) entitlement MintCertificateNFT
+    access(all) entitlement Editions
 
     /// Event to show when an NFT is minted
     access(all) event Minted(
@@ -57,6 +57,7 @@ contract Mneme: NonFungibleToken {
         name: String,
         description: String
     )
+    access(all) event EditionCreated(artistAddress: Address, editionId: UInt64)
     // -----------------------------------------------------------------------
     // Mneme contract-level Composite Type definitions
     // -----------------------------------------------------------------------
@@ -102,7 +103,7 @@ contract Mneme: NonFungibleToken {
             self.totalMinted = 0
         }
 
-        access(Admin) fun editEdition(
+        access(Editions) fun editEdition(
             name: String?,
             price: UFix64?,
             type: String?,
@@ -121,7 +122,7 @@ contract Mneme: NonFungibleToken {
         }
         /// mintNFT mints a new NFT with a new ID
         /// and returns it to the calling context
-        access(MintCertificateNFT) 
+        access(Editions) 
         fun mintCertificateNFT(thumbnail: String) {
             pre {
                 self.totalMinted < self.reprintLimit && self.reprintLimit != 0: "This edition has reached the reprint limit"
@@ -610,8 +611,11 @@ contract Mneme: NonFungibleToken {
 
             // publish an authorized capability to the 
             // stored edition resource to the artist
-            let artistCap: Capability<auth(Mneme.MintCertificateNFT) &Mneme.Edition> = Mneme.account.capabilities.storage.issue<auth(MintCertificateNFT) &Mneme.Edition>(storagePath)
+            let artistCap: Capability<auth(Mneme.Editions) &Mneme.Edition> = Mneme.account.capabilities.storage.issue<auth(Editions)  &Mneme.Edition>(storagePath)
             Mneme.account.inbox.publish(artistCap, name: storageIdentifier, recipient: artistAddress)
+
+            // Emit an event to the artist
+            emit EditionCreated(artistAddress: artistAddress, editionId: Mneme.totalEditions)
 
         }
 
@@ -622,7 +626,7 @@ contract Mneme: NonFungibleToken {
             thumbnail: String
         ) { 
             let storageIdentifier = "ArtDrop_Edition_\(artistAddress)_\(Mneme.totalEditions)"
-            let editionRef = Mneme.account.storage.borrow<auth(MintCertificateNFT) &Mneme.Edition>(from: StoragePath(identifier: storageIdentifier)!)!
+            let editionRef = Mneme.account.storage.borrow<auth(Editions) &Mneme.Edition>(from: StoragePath(identifier: storageIdentifier)!)!
             if editionRef == nil {
                 panic("Edition not found")
             }
