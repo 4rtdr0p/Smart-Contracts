@@ -111,15 +111,27 @@ func TestFullFlow(t *testing.T) {
 		WithArg("address", "bob"),
 	).Print()
 	// Bob(artist) transfers the Certificate NFT to Alice
-	/* 	color.Green("Bob(artist) transfers the Certificate NFT to Alice")
-	   	o.Tx("Mneme/transfer_certificate",
-	   		WithSigner("bob"),
-	   		WithArg("to", "alice"),
-	   		WithArg("id", 1),
-	   	).AssertSuccess(t).Print()
-	   	// Alice checks if she has the Certificate NFT
-	   	color.Green("Alice checks if she has the Certificate NFT")
-	   	o.Script("get_owned_nfts",
-	   		WithArg("account", "alice"),
-	   	).Print() */
+	color.Green("Bob(artist) transfers the Certificate NFT to Alice")
+	o.Tx("Mneme/transfer_certificate",
+		WithSigner("bob"),
+		WithArg("to", "alice"),
+		WithArg("id", 1),
+	).AssertSuccess(t).Print()
+	// Alice checks if she has the Certificate NFT
+	color.Green("Alice checks if she has the Certificate NFT")
+	o.Script("get_owned_nfts",
+		WithArg("account", "alice"),
+	).Print()
+	// Add a new vault to the pool
+	color.Green("Add a new vault to the pool")
+	o.Tx("Pistis/add_vault",
+		WithSigner("alice"),
+	).AssertSuccess(t).Print()
+	color.Green("Deposit Flow to a Certificate NFT")
+	o.Tx("Pistis/deposit_to_vault",
+		WithSigner("account"),
+		WithArg("account", "alice"),
+		WithArg("amount", "1.0"),
+		WithArg("id", 1),
+	).AssertSuccess(t).Print()
 }

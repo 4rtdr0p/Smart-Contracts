@@ -1,4 +1,4 @@
-import "ArtDrop" 
+import "Mneme" 
 import "FungibleToken"
 import "FlowToken"
 
@@ -10,12 +10,15 @@ transaction() {
         self.vaultReceiverRef = signer.capabilities.storage.issue<&{FungibleToken.Receiver}>(StoragePath(identifier: "/public/flowTokenReceiver")!)
 
         // get the collection reference
-        let collectionRef: &ArtDrop.Collection = signer.storage.borrow<&ArtDrop.Collection>(from: ArtDrop.CollectionStoragePath)!
+        let collectionRef: &Mneme.Collection = signer.storage.borrow<&Mneme.Collection>(from: Mneme.CollectionStoragePath)!
         // get the first ID
-        let id = collectionRef.getIDs()[0]
-        // create a new FlowToken Vault
-        let newVault <- FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
-        collectionRef.addVault(vaultType: Type<@FlowToken.Vault>(), vault: <- newVault, id: id, vaultReceiverPath: /public/flowTokenReceiver)  
+        let ids = collectionRef.getIDs()
+        // Loop through the IDs and add a new vault to the collection
+        for id in ids {
+            // create a new FlowToken Vault
+            let newVault <- FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
+            collectionRef.addVault(vaultType: Type<@FlowToken.Vault>(), vault: <- newVault, id: id, vaultReceiverPath: /public/flowTokenReceiver)  
+        } 
     }
 } 
   

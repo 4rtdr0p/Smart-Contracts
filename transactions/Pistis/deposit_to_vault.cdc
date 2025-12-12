@@ -1,4 +1,4 @@
-import "ArtDrop" 
+import "Mneme" 
 import "FungibleToken"
 import "FlowToken"
 
@@ -12,7 +12,7 @@ transaction(account: Address, amount: UFix64, id: UInt64) {
                     .concat(". The signer must initialize their account with this vault first!"))
 
 
-        let collectionRef: &ArtDrop.Collection = getAccount(account).capabilities.borrow<&ArtDrop.Collection>(ArtDrop.CollectionPublicPath)!
+        let collectionRef: &Mneme.Collection = getAccount(account).capabilities.borrow<&Mneme.Collection>(Mneme.CollectionPublicPath)!
         
         
         collectionRef.depositToVault(id: id, vaultType: Type<@FlowToken.Vault>(), vaultDeposit: <- vaultRef.withdraw(amount: amount))
