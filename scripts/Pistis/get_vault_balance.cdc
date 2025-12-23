@@ -1,17 +1,16 @@
 import "FlowToken"
 import "NonFungibleToken"
-import "ArtDrop"
+import "Mneme"
 
 
 access(all)
-fun main(address: Address): {String: AnyStruct} {
+fun main(address: Address, certificateID: UInt64): {String: AnyStruct} {
 let metadata: {String: AnyStruct} = {}
 
 
     let account = getAccount(address)
-    let collectionRef = account.capabilities.borrow<&ArtDrop.Collection>(ArtDrop.CollectionPublicPath)!
-    let id = collectionRef.getIDs()[0]
-    let nftRef = collectionRef.borrowNFT(id)! as! &ArtDrop.NFT
+    let collectionRef = account.capabilities.borrow<&Mneme.Collection>(Mneme.CollectionPublicPath)!
+    let nftRef = collectionRef.borrowNFT(certificateID)! as! &Mneme.CertificateNFT
     metadata["balance"] = nftRef.vaultsDict[Type<@FlowToken.Vault>()]!.balance
 
     return metadata

@@ -134,4 +134,14 @@ func TestFullFlow(t *testing.T) {
 		WithArg("amount", "1.0"),
 		WithArg("id", 1),
 	).AssertSuccess(t).Print()
+	// Get the vault balance
+	color.Green("Get the vault balance")
+	o.Script("Pistis/get_vault_balance",
+		WithArg("address", "alice"),
+	).Print()
+	// Withdraw Flow from a Certificate NFT
+	color.Green("Withdraw Flow from a Certificate NFT")
+	o.Tx("Pistis/withdraw_flowtoken",
+		WithSigner("alice"),
+	).AssertSuccess(t).Print()
 }

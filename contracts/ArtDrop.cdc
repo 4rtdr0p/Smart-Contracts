@@ -1,14 +1,19 @@
-/*
-*
-*  This is an example implementation of a Flow Non-Fungible Token
-*  using the V2 standard.
-*  It is not part of the official standard but it assumed to be
-*  similar to how many NFTs would implement the core functionality.
-*
-*  This contract does not implement any sophisticated classification
-*  system for its NFTs. It defines a simple NFT with minimal metadata.
-*
-*/
+// MADE BY: Noah_Overflow
+
+// This contract is for Mneme, a proof of support platform
+// on Flow. 
+
+// Mneme (Μνήμη) is one of the original three Muses in pre-Homeric Greek mythology.
+// Before the more famous Nine Muses were standardized by Hesiod (daughters of Zeus and Mnemosyne)
+// there were three older Muses:
+
+// Melete – Muse of Practice/Contemplation
+// Mneme – Muse of Memory
+// Aoide – Muse of Song
+
+// Mneme herself was seen as the preserver of knowledge and inspiration, responsible for the ability of poets, orators 
+// and artists to recall what came before and give it form. She represents the thread that links art to time and culture 
+// Literally, the memory of humanity encoded in creative work.
 
 import "NonFungibleToken"
 import "FungibleToken"
@@ -16,7 +21,9 @@ import "FlowToken"
 import "ViewResolver"
 import "MetadataViews"
 import "Pistis"
-
+import "RandomConsumer"
+import "Xorshift128plus"
+import "Burner"
 // import "CrossVMMetadataViews"
 // import "EVM"
 
@@ -31,6 +38,8 @@ contract Mneme: NonFungibleToken {
     access(self) var artistEditions: {Address: [Int64]}
     access(self) var totalEditions: UInt64
     access(all) let address: Address
+    /// The RandomConsumer.Consumer resource used to request & fulfill randomness
+    access(self) let consumer: @RandomConsumer.Consumer
     // -----------------------------------------------------------------------
     // Mneme account paths
     // -----------------------------------------------------------------------
@@ -124,17 +133,29 @@ contract Mneme: NonFungibleToken {
         /// and returns it to the calling context
         access(Editions) 
         fun mintCertificateNFT(thumbnail: String) {
-            pre {
-                self.totalMinted < self.reprintLimit && self.reprintLimit != 0: "This edition has reached the reprint limit"
-            }
+            // Check if the edition has a reprint limit
+            // If it does, check if the total minted count has reached the reprint limit
+            if self.reprintLimit != 0 {
+                if self.totalMinted >= self.reprintLimit {
+                    panic("This edition has reached the reprint limit")
+                }
 
+            }            
             let metadata: {String: AnyStruct} = {}
             let currentBlock = getCurrentBlock()
             metadata["mintedBlock"] = currentBlock.height
             metadata["mintedTime"] = currentBlock.timestamp
-
             // this piece of metadata will be used to show embedding rarity into a trait
             metadata["foo"] = "bar"
+            // [2x. 3x, 4x, 5x, 6x, 7x, 8x, 9x, 10x]
+
+            // request randomness
+            let request <- Mneme.consumer.requestRandomness()
+            let receipt <- create Receipt(request: <-request)
+
+            // Safe receipt linked to this CertificateNFT
+
+
 
             // create a new NFT
             var newNFT <- create CertificateNFT(
@@ -464,6 +485,35 @@ contract Mneme: NonFungibleToken {
         }
     }
     // -----------------------------------------------------------------------
+    // ArtDrop Receipt Resource
+    // -----------------------------------------------------------------------
+    /// The Receipt resource is used to store the associated randomness request. By listing the
+    /// RandomConsumer.RequestWrapper conformance, this resource inherits all the default implementations of the
+    /// interface. This is why the Receipt resource has access to the getRequestBlock() and popRequest() functions
+    /// without explicitly defining them.
+    ///
+    access(all) resource Receipt : RandomConsumer.RequestWrapper {
+        /// The associated randomness request which contains the block height at which the request was made
+        // The setID of the intended pack
+
+        /// and whether the request has been fulfilled.
+        access(all) var request: @RandomConsumer.Request?
+
+        init(request: @RandomConsumer.Request) {
+        
+            self.request <- request
+        }
+    }
+    /// Returns a random number between 0 and 1 using the RandomConsumer.Consumer resource contained in the contract.
+    /// For the purposes of this contract, a simple modulo operation could have been used though this is not the case
+    /// for all ranges. Using the Consumer.fulfillRandomInRange function ensures that we can get a random number
+    /// within any range without a risk of bias.
+    ///
+    access(self) 
+    fun _randomNumber(request: @RandomConsumer.Request, max: Int): UInt64 {
+        return self.consumer.fulfillRandomInRange(request: <-request, min: 0, max: UInt64(max))
+    }
+    // -----------------------------------------------------------------------
     // Mneme public functions
     // -----------------------------------------------------------------------
     // Get all the Artists and their Editions
@@ -641,6 +691,8 @@ contract Mneme: NonFungibleToken {
         self.collectionInfo = {}
         self.artistEditions = {}
         self.totalEditions = 0
+        // Create a RandomConsumer.Consumer resource
+        self.consumer <-RandomConsumer.createConsumer()
         self.address = self.account.address
         let identifier = "Mneme_\(self.account.address))"
         // Set the named paths

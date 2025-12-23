@@ -37,7 +37,7 @@
 		},
 		"FlowToken": {
 			"source": "testnet://7e60df042a9c0868.FlowToken",
-			"hash": "a7b219cf8596c1116aa219bb31535faa79ebf5e02d16fa594acd0398057674e1",
+			"hash": "f82389e2412624ffa439836b00b42e6605b0c00802a4e485bc95b8930a7eac38",
 			"aliases": {
 				"emulator": "0ae53cb6e3f42a79",
 				"mainnet": "1654653399040a61",
@@ -46,7 +46,7 @@
 		},
 		"FungibleToken": {
 			"source": "testnet://9a0766d93b6608b7.FungibleToken",
-			"hash": "d84e41a86bd27806367b89c75a2a9570f7713480ab113cc214c4576466888958",
+			"hash": "4b74edfe7d7ddfa70b703c14aa731a0b2e7ce016ce54d998bfd861ada4d240f6",
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
@@ -55,7 +55,7 @@
 		},
 		"FungibleTokenMetadataViews": {
 			"source": "testnet://9a0766d93b6608b7.FungibleTokenMetadataViews",
-			"hash": "085d02742eb50e6200cf2a4ad4551857313513afa7205c1e85f5966547a56df3",
+			"hash": "70477f80fd7678466c224507e9689f68f72a9e697128d5ea54d19961ec856b3c",
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
@@ -64,7 +64,7 @@
 		},
 		"MetadataViews": {
 			"source": "testnet://631e88ae7f1d7c20.MetadataViews",
-			"hash": "d467bbde7bcf59dafbe5d472b44dcc6018ca53697baf1aea523f8ff145455eee",
+			"hash": "b290b7906d901882b4b62e596225fb2f10defb5eaaab4a09368f3aee0e9c18b1",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
@@ -73,11 +73,27 @@
 		},
 		"NonFungibleToken": {
 			"source": "testnet://631e88ae7f1d7c20.NonFungibleToken",
-			"hash": "ac40c5a3ec05884ae48cb52ebf680deebb21e8a0143cd7d9b1dc88b0f107e088",
+			"hash": "a258de1abddcdb50afc929e74aca87161d0083588f6abf2b369672e64cf4a403",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
 				"testnet": "631e88ae7f1d7c20"
+			}
+		},
+		"RandomBeaconHistory": {
+			"source": "mainnet://e467b9dd11fa00df.RandomBeaconHistory",
+			"hash": "fe7f11c46dd54446bd60d88015ffe5057d7245c4b77374e11db2adf0a8156167",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
+			}
+		},
+		"RandomConsumer": {
+			"source": "mainnet://45caec600164c9e6.RandomConsumer",
+			"hash": "47a07080dcbc5c1ed738dbf9b28e28ca6f16319585ac9baaaa109d3df3cbacba",
+			"aliases": {
+				"mainnet": "45caec600164c9e6"
 			}
 		},
 		"ViewResolver": {
@@ -87,6 +103,13 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
 				"testnet": "631e88ae7f1d7c20"
+			}
+		},
+		"Xorshift128plus": {
+			"source": "mainnet://45caec600164c9e6.Xorshift128plus",
+			"hash": "219161c40707967b50ff71e507ac0e5ee24d932ea8925112fe108ff2638711aa",
+			"aliases": {
+				"mainnet": "45caec600164c9e6"
 			}
 		}
 	},
