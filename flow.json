@@ -23,6 +23,12 @@
 			"aliases": {
 				"testnet": "e6ddfc62f8ec2020"
 			}
+		},
+		"Escrow": {
+			"source": "contracts/Escrow.cdc",
+			"aliases": {
+				"testnet": "e6ddfc62f8ec2020"
+			}
 		}
 	},
 	"dependencies": {
@@ -187,7 +193,8 @@
 			"emulator-account": [
 				"Pistis",
 				"ExampleToken",
-				"Mneme"
+				"Mneme",
+				"Escrow"
 			],
 			"emulator-alice": [],
 			"emulator-bob": []

@@ -150,8 +150,8 @@ contract Mneme: NonFungibleToken {
             // [2x. 3x, 4x, 5x, 6x, 7x, 8x, 9x, 10x]
 
             // request randomness
-            let request <- Mneme.consumer.requestRandomness()
-            let receipt <- create Receipt(request: <-request)
+           // let request <- Mneme.consumer.requestRandomness()
+           // let receipt <- create Receipt(request: <-request)
 
             // Safe receipt linked to this CertificateNFT
 

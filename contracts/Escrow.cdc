@@ -18,7 +18,7 @@ contract Escrow {
 
         // RECEIPTS 
         ///./////.////
-        access(self) let handlerId: UInt64
+        access(all) let handlerId: UInt64
         access(self) var offerVault: @FlowToken.Vault
         access(self) var receipts: @[FlowTransactionScheduler.ScheduledTransaction]
 
@@ -41,6 +41,10 @@ contract Escrow {
             }
             let balance <- self.offerVault.withdraw(amount: self.offerVault.balance) as! @FlowToken.Vault  
             return <- balance
+        }
+        // deposit receipt
+        access(all) fun depositReceipt(receipt: @FlowTransactionScheduler.ScheduledTransaction) {
+            self.receipts.append(<- receipt)
         }
 
         init(
@@ -67,6 +71,11 @@ contract Escrow {
     // based on the handler id
     access(all) view fun getHandlerStoragePath(_ handlerId: UInt64): StoragePath {
         return StoragePath(identifier: "\(Escrow.account.address)_Escrow_Handler_\(handlerId)")!
+    }
+
+    // function to create a new handler
+    access(all) fun createHandler(offerVault: @FlowToken.Vault, receiver: Address): @Handler {
+        return <- create Handler(offerVault: <- offerVault, receiver: receiver)
     }
 
     init() {
