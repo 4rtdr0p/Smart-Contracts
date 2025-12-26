@@ -8,6 +8,7 @@ access(all)
 contract Escrow {
 
     access(self) var handlerId: UInt64
+    access(self) let address: Address
 
     access(all) entitlement Owner
     
@@ -19,6 +20,7 @@ contract Escrow {
         // RECEIPTS 
         ///./////.////
         access(all) let handlerId: UInt64
+        access(all) let receiver: Address
         access(self) var offerVault: @FlowToken.Vault
         access(self) var receipts: @[FlowTransactionScheduler.ScheduledTransaction]
 
@@ -57,11 +59,12 @@ contract Escrow {
             self.handlerId = Escrow.handlerId 
             self.offerVault <- offerVault
             self.receipts <- []
-            let inboxIdentifier = "\(Escrow.account.address)_Escrow_Handler_\(self.handlerId)"
+            self.receiver = receiver
+/*             let inboxIdentifier = "\(receiver)_Escrow_Handler_\(self.handlerId)"
             // Get a cap to this handler resource
             let handlerCap = Escrow.account.capabilities.storage.issue<auth(Owner) &Handler>(Escrow.getHandlerStoragePath(self.handlerId))
             // Pubish an authorized capability to the inbox
-            Escrow.account.inbox.publish(handlerCap, name: inboxIdentifier, recipient: receiver)
+            Escrow.account.inbox.publish(handlerCap, name: inboxIdentifier, recipient: receiver) */
 
         }
     }
@@ -77,8 +80,13 @@ contract Escrow {
     access(all) fun createHandler(offerVault: @FlowToken.Vault, receiver: Address): @Handler {
         return <- create Handler(offerVault: <- offerVault, receiver: receiver)
     }
+    // function to get the address of the escrow
+    access(all) view fun getAddress(): Address {
+        return self.address
+    }
 
     init() {
         self.handlerId = 0
+        self.address = self.account.address
     } 
 }

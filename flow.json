@@ -1,9 +1,9 @@
 {
 	"contracts": {
-		"ArtDrop": {
-			"source": "contracts/ArtDrop.cdc",
+		"Escrow": {
+			"source": "contracts/Escrow.cdc",
 			"aliases": {
-				"testnet": "12ecc177508efad8"
+				"testnet": "e6ddfc62f8ec2020"
 			}
 		},
 		"ExampleToken": {
@@ -20,12 +20,6 @@
 		},
 		"Pistis": {
 			"source": "contracts/Pistis.cdc",
-			"aliases": {
-				"testnet": "e6ddfc62f8ec2020"
-			}
-		},
-		"Escrow": {
-			"source": "contracts/Escrow.cdc",
 			"aliases": {
 				"testnet": "e6ddfc62f8ec2020"
 			}
@@ -81,7 +75,8 @@
 			"source": "mainnet://e467b9dd11fa00df.FlowTransactionSchedulerUtils",
 			"hash": "429ed886472cd65def9e5ab1dd20079b0dcfb23095d18d54077767ac3316a8ce",
 			"aliases": {
-				"mainnet": "e467b9dd11fa00df"
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
 			}
 		},
 		"FungibleToken": {
@@ -133,7 +128,8 @@
 			"source": "mainnet://45caec600164c9e6.RandomConsumer",
 			"hash": "47a07080dcbc5c1ed738dbf9b28e28ca6f16319585ac9baaaa109d3df3cbacba",
 			"aliases": {
-				"mainnet": "45caec600164c9e6"
+				"mainnet": "45caec600164c9e6",
+				"testnet": "ed24dbe901028c5c"
 			}
 		},
 		"ViewResolver": {
@@ -149,7 +145,8 @@
 			"source": "mainnet://45caec600164c9e6.Xorshift128plus",
 			"hash": "219161c40707967b50ff71e507ac0e5ee24d932ea8925112fe108ff2638711aa",
 			"aliases": {
-				"mainnet": "45caec600164c9e6"
+				"mainnet": "45caec600164c9e6",
+				"testnet": "ed24dbe901028c5c"
 			}
 		}
 	},
@@ -179,6 +176,10 @@
 			"address": "f3fcd2c1a78f5eee",
 			"key": "3b90c6ed0051a32a9bbbd8d584d04f9db4948a63974e0a4ac70d637193d7e4c7"
 		},
+		"testnet-alice": {
+			"address": "9feb6c8f762b0b97",
+			"key": "7722184ea5fd17bd5983ac484e83a46281e11ee8dc82c6cef24e397bd0879787"
+		},
 		"testnet-artdrop": {
 			"address": "12ecc177508efad8",
 			"key": "2de15f37c266103e486dbdc0c15273d234536036f1a0318dbec79e3a85daccde"
@@ -190,20 +191,13 @@
 	},
 	"deployments": {
 		"emulator": {
-			"emulator-account": [
-				"Pistis",
-				"ExampleToken",
-				"Mneme",
-				"Escrow"
-			],
 			"emulator-alice": [],
-			"emulator-bob": []
+			"emulator-bob": [],
+			"emulator-account": ["Escrow", "RandomConsumer", "Xorshift128plus", "FlowTransactionScheduler"]
 		},
 		"testnet": {
-			"testnet-mneme": [
-				"Pistis",
-				"Mneme"
-			]
+			"testnet-artdrop": [],
+			"testnet-alice": []
 		}
 	}
 }
